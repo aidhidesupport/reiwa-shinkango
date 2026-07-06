@@ -92,6 +92,30 @@ const authSchema = z.object({
 
 const roleSchema = z.enum(["user", "trusted", "editor", "admin"]);
 
+async function createReport({
+  userId,
+  targetType,
+  targetId,
+  reason,
+  detail,
+}: {
+  userId: string;
+  targetType: "term" | "proposal" | "example" | "comment";
+  targetId: string;
+  reason: string;
+  detail?: string;
+}) {
+  await prisma.report.create({
+    data: {
+      targetType,
+      targetId,
+      reason,
+      detail,
+      createdById: userId,
+    },
+  });
+}
+
 export async function signUp(formData: FormData) {
   const email = text(formData, "email").toLowerCase();
   const password = text(formData, "password");
@@ -532,18 +556,87 @@ export async function reportProposal(formData: FormData) {
     throw new Error("通報対象が見つかりません。");
   }
 
-  await prisma.report.create({
-    data: {
-      targetType: "proposal",
-      targetId: proposalId,
-      reason,
-      detail: optionalText(formData, "detail"),
-      createdById: user.id,
-    },
+  await createReport({
+    userId: user.id,
+    targetType: "proposal",
+    targetId: proposalId,
+    reason,
+    detail: optionalText(formData, "detail"),
   });
 
   revalidatePath("/dashboard");
   redirect(`/terms/${termSlug}#proposal-${proposalId}`);
+}
+
+export async function reportTerm(formData: FormData) {
+  const user = await requireActiveUser();
+  await enforceRateLimit(user.id, "report");
+  const termId = text(formData, "termId");
+  const termSlug = text(formData, "termSlug");
+  const reason = text(formData, "reason") || "other";
+
+  if (!termId || !termSlug) {
+    throw new Error("通報対象が見つかりません。");
+  }
+
+  await createReport({
+    userId: user.id,
+    targetType: "term",
+    targetId: termId,
+    reason,
+    detail: optionalText(formData, "detail"),
+  });
+
+  revalidatePath("/dashboard");
+  redirect(`/terms/${termSlug}`);
+}
+
+export async function reportUsageExample(formData: FormData) {
+  const user = await requireActiveUser();
+  await enforceRateLimit(user.id, "report");
+  const exampleId = text(formData, "exampleId");
+  const proposalId = text(formData, "proposalId");
+  const termSlug = text(formData, "termSlug");
+  const reason = text(formData, "reason") || "other";
+
+  if (!exampleId || !proposalId || !termSlug) {
+    throw new Error("通報対象が見つかりません。");
+  }
+
+  await createReport({
+    userId: user.id,
+    targetType: "example",
+    targetId: exampleId,
+    reason,
+    detail: optionalText(formData, "detail"),
+  });
+
+  revalidatePath("/dashboard");
+  redirect(`/terms/${termSlug}#proposal-${proposalId}-${exampleId}`);
+}
+
+export async function reportComment(formData: FormData) {
+  const user = await requireActiveUser();
+  await enforceRateLimit(user.id, "report");
+  const commentId = text(formData, "commentId");
+  const proposalId = text(formData, "proposalId");
+  const termSlug = text(formData, "termSlug");
+  const reason = text(formData, "reason") || "other";
+
+  if (!commentId || !proposalId || !termSlug) {
+    throw new Error("通報対象が見つかりません。");
+  }
+
+  await createReport({
+    userId: user.id,
+    targetType: "comment",
+    targetId: commentId,
+    reason,
+    detail: optionalText(formData, "detail"),
+  });
+
+  revalidatePath("/dashboard");
+  redirect(`/terms/${termSlug}#comment-${commentId}`);
 }
 
 export async function hideProposal(formData: FormData) {

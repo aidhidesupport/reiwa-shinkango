@@ -1,5 +1,13 @@
 import { AlertTriangle, CheckCircle2, MessageSquare, Plus, Scale, Send, ShieldCheck } from "lucide-react";
-import { addComment, addUsageExample, evaluateProposal, reportProposal, setRecommendation } from "@/app/actions";
+import {
+  addComment,
+  addUsageExample,
+  evaluateProposal,
+  reportComment,
+  reportProposal,
+  reportUsageExample,
+  setRecommendation,
+} from "@/app/actions";
 import { EVALUATION_LABELS, RECOMMENDATION_LEVELS } from "@/lib/labels";
 import { canEditRecommendations } from "@/lib/session";
 import { countLabels, scoreProposal } from "@/lib/scoring";
@@ -129,15 +137,39 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
 
       <div className="examples">
         {proposal.examples.map((example) => (
-          <div key={example.id} id={`proposal-${proposal.id}-${example.id}`} className="example-pair">
-            <div>
-              <span>元文</span>
-              <p>{example.originalSentence}</p>
+          <div key={example.id} id={`proposal-${proposal.id}-${example.id}`} className="example-block">
+            <div className="example-pair">
+              <div>
+                <span>元文</span>
+                <p>{example.originalSentence}</p>
+              </div>
+              <div>
+                <span>言い換え</span>
+                <p>{example.rewrittenSentence}</p>
+              </div>
             </div>
-            <div>
-              <span>言い換え</span>
-              <p>{example.rewrittenSentence}</p>
-            </div>
+            {currentUser ? (
+              <details className="report-details compact-report">
+                <summary>
+                  <AlertTriangle size={15} />
+                  使用例を通報
+                </summary>
+                <form action={reportUsageExample} className="inline-form">
+                  <input type="hidden" name="exampleId" value={example.id} />
+                  <input type="hidden" name="proposalId" value={proposal.id} />
+                  <input type="hidden" name="termSlug" value={termSlug} />
+                  <select name="reason" defaultValue="meaning_error" aria-label="通報理由">
+                    <option value="meaning_error">意味の誤り</option>
+                    <option value="duplicate">重複</option>
+                    <option value="abuse">攻撃的</option>
+                    <option value="copyright">権利問題</option>
+                    <option value="other">その他</option>
+                  </select>
+                  <input name="detail" placeholder="補足" />
+                  <button type="submit">送信</button>
+                </form>
+              </details>
+            ) : null}
           </div>
         ))}
       </div>
@@ -209,9 +241,31 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
         </h5>
         {proposal.comments.length === 0 ? <p className="muted">まだコメントはありません。</p> : null}
         {proposal.comments.map((comment) => (
-          <div key={comment.id} className="comment">
+          <div key={comment.id} id={`comment-${comment.id}`} className="comment">
             <span>{categoryLabels[comment.category] ?? "その他"} / {comment.user.displayName}</span>
             <p>{comment.body}</p>
+            {currentUser ? (
+              <details className="report-details compact-report">
+                <summary>
+                  <AlertTriangle size={15} />
+                  コメントを通報
+                </summary>
+                <form action={reportComment} className="inline-form">
+                  <input type="hidden" name="commentId" value={comment.id} />
+                  <input type="hidden" name="proposalId" value={proposal.id} />
+                  <input type="hidden" name="termSlug" value={termSlug} />
+                  <select name="reason" defaultValue="abuse" aria-label="通報理由">
+                    <option value="meaning_error">意味の誤り</option>
+                    <option value="duplicate">重複</option>
+                    <option value="abuse">攻撃的</option>
+                    <option value="copyright">権利問題</option>
+                    <option value="other">その他</option>
+                  </select>
+                  <input name="detail" placeholder="補足" />
+                  <button type="submit">送信</button>
+                </form>
+              </details>
+            ) : null}
           </div>
         ))}
         {currentUser ? (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock3, History, Plus, Tag } from "lucide-react";
+import { AlertTriangle, Clock3, History, Plus, Tag } from "lucide-react";
+import { reportTerm } from "@/app/actions";
 import { AddProposalForm, AddSenseForm } from "@/components/TermForms";
 import { ProposalCard } from "@/components/ProposalCard";
 import { canModerate, getCurrentUser } from "@/lib/session";
@@ -92,6 +93,27 @@ export default async function TermPage({ params }: TermPageProps) {
             <History size={15} />
             変更履歴
           </Link>
+          {currentUser ? (
+            <details className="report-details term-report">
+              <summary>
+                <AlertTriangle size={15} />
+                通報
+              </summary>
+              <form action={reportTerm} className="inline-form">
+                <input type="hidden" name="termId" value={term.id} />
+                <input type="hidden" name="termSlug" value={term.slug} />
+                <select name="reason" defaultValue="meaning_error" aria-label="通報理由">
+                  <option value="meaning_error">意味の誤り</option>
+                  <option value="duplicate">重複</option>
+                  <option value="abuse">攻撃的</option>
+                  <option value="copyright">権利問題</option>
+                  <option value="other">その他</option>
+                </select>
+                <input name="detail" placeholder="補足" />
+                <button type="submit">送信</button>
+              </form>
+            </details>
+          ) : null}
         </div>
       </section>
 

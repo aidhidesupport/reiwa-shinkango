@@ -130,18 +130,81 @@ export default async function DashboardPage() {
   const reportProposalIds = openReports
     .filter((report) => report.targetType === "proposal")
     .map((report) => report.targetId);
-  const reportTargets = await prisma.translationProposal.findMany({
-    where: { id: { in: reportProposalIds } },
-    include: {
-      sense: {
-        include: {
-          term: true,
+  const reportTermIds = openReports
+    .filter((report) => report.targetType === "term")
+    .map((report) => report.targetId);
+  const reportExampleIds = openReports
+    .filter((report) => report.targetType === "example")
+    .map((report) => report.targetId);
+  const reportCommentIds = openReports
+    .filter((report) => report.targetType === "comment")
+    .map((report) => report.targetId);
+  const [reportProposalTargets, reportTermTargets, reportExampleTargets, reportCommentTargets] = await Promise.all([
+    prisma.translationProposal.findMany({
+      where: { id: { in: reportProposalIds } },
+      include: {
+        sense: {
+          include: {
+            term: true,
+          },
         },
+        createdBy: true,
       },
-      createdBy: true,
-    },
-  });
-  const reportTargetMap = new Map(reportTargets.map((proposal) => [proposal.id, proposal]));
+    }),
+    prisma.term.findMany({
+      where: { id: { in: reportTermIds } },
+    }),
+    prisma.usageExample.findMany({
+      where: { id: { in: reportExampleIds } },
+      include: {
+        term: true,
+        proposal: true,
+      },
+    }),
+    prisma.comment.findMany({
+      where: { id: { in: reportCommentIds } },
+      include: {
+        proposal: {
+          include: {
+            sense: {
+              include: {
+                term: true,
+              },
+            },
+          },
+        },
+        user: true,
+      },
+    }),
+  ]);
+  const reportTargetLinks = new Map<string, { href: string; label: string }>();
+  for (const proposal of reportProposalTargets) {
+    reportTargetLinks.set(`proposal:${proposal.id}`, {
+      href: `/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`,
+      label: `${proposal.sense.term.headword} / ${proposal.text}`,
+    });
+  }
+  for (const term of reportTermTargets) {
+    reportTargetLinks.set(`term:${term.id}`, {
+      href: `/terms/${term.slug}`,
+      label: term.headword,
+    });
+  }
+  for (const example of reportExampleTargets) {
+    reportTargetLinks.set(`example:${example.id}`, {
+      href: example.proposalId
+        ? `/terms/${example.term.slug}#proposal-${example.proposalId}-${example.id}`
+        : `/terms/${example.term.slug}`,
+      label: `${example.term.headword} / ${example.rewrittenSentence}`,
+    });
+  }
+  for (const comment of reportCommentTargets) {
+    if (!comment.proposal) continue;
+    reportTargetLinks.set(`comment:${comment.id}`, {
+      href: `/terms/${comment.proposal.sense.term.slug}#comment-${comment.id}`,
+      label: `${comment.proposal.sense.term.headword} / ${comment.user.displayName}のコメント`,
+    });
+  }
 
   const [termCount, proposalCount, recommendationCount, reportCount] = stats;
   const canEdit = currentUser ? canEditRecommendations(currentUser.role) : false;
@@ -253,45 +316,44 @@ export default async function DashboardPage() {
           </div>
           <div className="report-list">
             {openReports.length === 0 ? <p className="muted">未処理の通報はありません。</p> : null}
-            {openReports.map((report) => (
-              <div key={report.id} className="report-item">
-                <strong>{report.reason}</strong>
-                <span>{report.targetType} / 通報者: {report.createdBy.displayName}</span>
-                {report.targetType === "proposal" && reportTargetMap.get(report.targetId) ? (
-                  <Link
-                    href={`/terms/${reportTargetMap.get(report.targetId)?.sense.term.slug}#proposal-${report.targetId}`}
-                    className="text-link"
-                  >
-                    {reportTargetMap.get(report.targetId)?.sense.term.headword} /{" "}
-                    {reportTargetMap.get(report.targetId)?.text}
-                  </Link>
-                ) : null}
-                {report.detail ? <p>{report.detail}</p> : null}
-                <div className="moderation-actions">
-                  {report.targetType === "proposal" ? (
-                    <form action={hideProposal}>
-                      <input type="hidden" name="proposalId" value={report.targetId} />
-                      <input type="hidden" name="reason" value={`通報対応: ${report.reason}`} />
-                      <input type="hidden" name="returnTo" value="/dashboard" />
-                      <button type="submit">
-                        <EyeOff size={15} />
-                        非表示
-                      </button>
-                    </form>
+            {openReports.map((report) => {
+              const targetLink = reportTargetLinks.get(`${report.targetType}:${report.targetId}`);
+              return (
+                <div key={report.id} className="report-item">
+                  <strong>{report.reason}</strong>
+                  <span>{report.targetType} / 通報者: {report.createdBy.displayName}</span>
+                  {targetLink ? (
+                    <Link href={targetLink.href} className="text-link">
+                      {targetLink.label}
+                    </Link>
                   ) : null}
-                  <form action={resolveReport}>
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <input type="hidden" name="status" value="resolved" />
-                    <button type="submit">処理済み</button>
-                  </form>
-                  <form action={resolveReport}>
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <input type="hidden" name="status" value="dismissed" />
-                    <button type="submit">却下</button>
-                  </form>
+                  {report.detail ? <p>{report.detail}</p> : null}
+                  <div className="moderation-actions">
+                    {report.targetType === "proposal" ? (
+                      <form action={hideProposal}>
+                        <input type="hidden" name="proposalId" value={report.targetId} />
+                        <input type="hidden" name="reason" value={`通報対応: ${report.reason}`} />
+                        <input type="hidden" name="returnTo" value="/dashboard" />
+                        <button type="submit">
+                          <EyeOff size={15} />
+                          非表示
+                        </button>
+                      </form>
+                    ) : null}
+                    <form action={resolveReport}>
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <input type="hidden" name="status" value="resolved" />
+                      <button type="submit">処理済み</button>
+                    </form>
+                    <form action={resolveReport}>
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <input type="hidden" name="status" value="dismissed" />
+                      <button type="submit">却下</button>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="note-box">
             <strong>草案</strong>

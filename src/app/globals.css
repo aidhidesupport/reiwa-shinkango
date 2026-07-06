@@ -733,6 +733,11 @@ main {
   gap: 10px;
 }
 
+.example-block {
+  display: grid;
+  gap: 8px;
+}
+
 .example-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -865,6 +870,20 @@ main {
   color: var(--accent);
   font-weight: 800;
   cursor: pointer;
+}
+
+.compact-report {
+  padding-top: 8px;
+  border-top: 0;
+}
+
+.compact-report summary {
+  font-size: 13px;
+}
+
+.term-report {
+  width: min(460px, 100%);
+  padding-top: 6px;
 }
 
 .side-panel {
