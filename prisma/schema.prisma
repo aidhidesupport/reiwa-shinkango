@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  displayName  String
+  handle       String    @unique
+  email        String?   @unique
+  passwordHash String?
+  role         String    @default("user")
+  reputation   Int       @default(0)
+  createdAt    DateTime  @default(now())
+  suspendedAt  DateTime?
+
+  terms           Term[]                @relation("TermCreatedBy")
+  senses          Sense[]               @relation("SenseCreatedBy")
+  proposals       TranslationProposal[] @relation("ProposalCreatedBy")
+  examples        UsageExample[]        @relation("ExampleCreatedBy")
+  evaluations     Evaluation[]
+  comments        Comment[]
+  recommendations Recommendation[]      @relation("RecommendationDecidedBy")
+  revisions       Revision[]            @relation("RevisionCreatedBy")
+  reports         Report[]              @relation("ReportCreatedBy")
+}
+
+model Domain {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  senses Sense[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  terms TermTag[]
+}
+
+model TermTag {
+  termId String
+  tagId  String
+
+  term Term @relation(fields: [termId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([termId, tagId])
+}
+
+model Term {
+  id                 String   @id @default(cuid())
+  headword           String
+  slug               String   @unique
+  normalizedHeadword String
+  reading            String?
+  originalWord       String?
+  summary            String
+  status             String   @default("published")
+  createdById        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  createdBy User           @relation("TermCreatedBy", fields: [createdById], references: [id])
+  senses    Sense[]
+  examples  UsageExample[]
+  tags      TermTag[]
+
+  @@index([normalizedHeadword])
+}
+
+model Sense {
+  id          String   @id @default(cuid())
+  termId      String
+  domainId    String?
+  title       String
+  description String
+  usageNote   String?
+  order       Int      @default(0)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  term            Term                  @relation(fields: [termId], references: [id])
+  domain          Domain?               @relation(fields: [domainId], references: [id])
+  createdBy       User                  @relation("SenseCreatedBy", fields: [createdById], references: [id])
+  proposals       TranslationProposal[]
+  examples        UsageExample[]
+  recommendations Recommendation[]
+}
+
+model TranslationProposal {
+  id           String   @id @default(cuid())
+  senseId      String
+  text         String
+  reading      String?
+  fitContext   String
+  unfitContext String?
+  rationale    String?
+  pros         String?
+  cons         String?
+  register     String   @default("neutral")
+  status       String   @default("active")
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sense           Sense            @relation(fields: [senseId], references: [id])
+  createdBy       User             @relation("ProposalCreatedBy", fields: [createdById], references: [id])
+  examples        UsageExample[]
+  evaluations     Evaluation[]
+  comments        Comment[]
+  recommendations Recommendation[]
+}
+
+model UsageExample {
+  id                String   @id @default(cuid())
+  termId            String
+  senseId           String
+  proposalId        String?
+  originalSentence  String
+  rewrittenSentence String
+  contextNote       String?
+  sourceType        String   @default("original")
+  sourceUrl         String?
+  createdById       String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  term      Term                 @relation(fields: [termId], references: [id])
+  sense     Sense                @relation(fields: [senseId], references: [id])
+  proposal  TranslationProposal? @relation(fields: [proposalId], references: [id])
+  createdBy User                 @relation("ExampleCreatedBy", fields: [createdById], references: [id])
+}
+
+model Evaluation {
+  id         String   @id @default(cuid())
+  proposalId String
+  userId     String
+  labelsCsv  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  proposal TranslationProposal @relation(fields: [proposalId], references: [id])
+  user     User                @relation(fields: [userId], references: [id])
+
+  @@unique([proposalId, userId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  proposalId String?
+  termId     String?
+  userId     String
+  category   String   @default("other")
+  body       String
+  createdAt  DateTime @default(now())
+
+  proposal TranslationProposal? @relation(fields: [proposalId], references: [id])
+  user     User                 @relation(fields: [userId], references: [id])
+}
+
+model Recommendation {
+  id                      String   @id @default(cuid())
+  senseId                 String
+  proposalId              String
+  level                   String
+  context                 String
+  rationale               String
+  representativeExampleId String?
+  decidedById             String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  sense     Sense               @relation(fields: [senseId], references: [id])
+  proposal  TranslationProposal @relation(fields: [proposalId], references: [id])
+  decidedBy User                @relation("RecommendationDecidedBy", fields: [decidedById], references: [id])
+}
+
+model Revision {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  beforeJson  String?
+  afterJson   String
+  reason      String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User @relation("RevisionCreatedBy", fields: [createdById], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  targetType  String
+  targetId    String
+  reason      String
+  detail      String?
+  status      String   @default("open")
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User @relation("ReportCreatedBy", fields: [createdById], references: [id])
+}

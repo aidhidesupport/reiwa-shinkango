@@ -1,0 +1,43 @@
+{
+  "name": "reiwa-shinkango",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "build": "prisma generate && next build",
+    "build:postgres": "bash scripts/build-postgres.sh",
+    "start": "next start",
+    "prisma:generate": "prisma generate",
+    "prisma:generate:postgres": "bash scripts/prisma-generate-postgres.sh",
+    "prisma:migrate:postgres": "bash scripts/prisma-migrate-postgres.sh",
+    "prisma:push": "npm run db:init",
+    "db:init": "sqlite3 prisma/dev.db < prisma/init.sql",
+    "db:reset": "npm run prisma:generate && npm run db:init && npm run seed",
+    "backup:sqlite": "bash scripts/backup-sqlite.sh",
+    "backup:postgres": "bash scripts/backup-postgres.sh",
+    "seed": "tsx prisma/seed.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "lucide-react": "^1.23.0",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.16"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.61.1",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
