@@ -329,11 +329,16 @@ main {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.content-grid {
+.content-grid,
+.queue-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
   gap: 28px;
   margin-top: 34px;
+}
+
+.queue-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .content-column {
@@ -363,7 +368,8 @@ main {
 .recommendation-list,
 .report-list,
 .timeline,
-.usage-snippets {
+.usage-snippets,
+.admin-user-list {
   display: grid;
   gap: 12px;
 }
@@ -379,6 +385,7 @@ main {
 .recommendation-summary,
 .empty-state,
 .similar-terms,
+.admin-user,
 .stacked-form,
 .workflow-band,
 .note-box {
@@ -396,6 +403,7 @@ main {
 .proposal-card,
 .empty-state,
 .similar-terms,
+.admin-user,
 .stacked-form,
 .note-box {
   padding: 18px;
@@ -428,7 +436,8 @@ main {
 .term-card h3,
 .search-result h2,
 .queue-item h3,
-.proposal-card h4 {
+.proposal-card h4,
+.admin-user h2 {
   margin: 0;
 }
 
@@ -984,6 +993,13 @@ main {
   gap: 12px;
 }
 
+.queue-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .compact-recommend-form {
   grid-column: 1 / -1;
   display: grid;
@@ -1013,6 +1029,121 @@ main {
   background: var(--surface-strong);
   color: var(--ink);
   font-weight: 800;
+}
+
+.admin-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.admin-search label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-search input,
+.admin-user-actions select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 0 12px;
+}
+
+.admin-user {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-user.suspended {
+  border-color: #dfafa7;
+  background: #fff8f6;
+}
+
+.admin-user-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.admin-user-main p,
+.status-line {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.admin-user-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.admin-user-stats div {
+  padding: 10px 12px;
+  background: var(--surface-strong);
+}
+
+.admin-user-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-user-stats dd {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.admin-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-user-actions form {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-user-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.admin-user-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .note-box {
@@ -1104,6 +1235,7 @@ main {
 
   .top-band,
   .content-grid,
+  .queue-grid,
   .term-layout,
   .term-hero {
     grid-template-columns: 1fr;
@@ -1134,6 +1266,8 @@ main {
   .workflow-band,
   .auth-grid,
   .policy-list,
+  .admin-search,
+  .admin-user-stats,
   .form-grid,
   .example-pair,
   .compact-recommend-form,

@@ -11,7 +11,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { joinLabels, normalizeForSearch, slugifyHeadword } from "@/lib/normalize";
-import { canEditRecommendations, canModerate, requireActiveUser } from "@/lib/session";
+import { canAdmin, canEditRecommendations, canModerate, requireActiveUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 function text(formData: FormData, name: string) {
@@ -89,6 +89,8 @@ const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+
+const roleSchema = z.enum(["user", "trusted", "editor", "admin"]);
 
 export async function signUp(formData: FormData) {
   const email = text(formData, "email").toLowerCase();
@@ -609,6 +611,45 @@ export async function suspendUser(formData: FormData) {
     where: { id: userId },
     data: { suspendedAt: new Date() },
   });
+  revalidatePath("/dashboard");
+  revalidatePath("/admin");
+  redirect(returnTo);
+}
+
+export async function unsuspendUser(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!canAdmin(user.role)) {
+    throw new Error("ユーザー停止を解除する権限がありません。");
+  }
+
+  const userId = text(formData, "userId");
+  const returnTo = text(formData, "returnTo") || "/admin";
+  await prisma.user.update({
+    where: { id: userId },
+    data: { suspendedAt: null },
+  });
+  revalidatePath("/admin");
+  redirect(returnTo);
+}
+
+export async function updateUserRole(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!canAdmin(user.role)) {
+    throw new Error("ロールを変更する権限がありません。");
+  }
+
+  const userId = text(formData, "userId");
+  const role = roleSchema.parse(text(formData, "role"));
+  const returnTo = text(formData, "returnTo") || "/admin";
+  if (userId === user.id) {
+    throw new Error("自分自身のロールは変更できません。");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role },
+  });
+  revalidatePath("/admin");
   revalidatePath("/dashboard");
   redirect(returnTo);
 }

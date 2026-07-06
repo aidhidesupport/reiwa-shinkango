@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BookOpen, LayoutDashboard, LogIn, LogOut, Plus, ScrollText, Search } from "lucide-react";
+import { BookOpen, LayoutDashboard, LogIn, LogOut, Plus, ScrollText, Search, Shield } from "lucide-react";
 import { signOut } from "@/app/actions";
-import { canModerate, getCurrentUser } from "@/lib/session";
+import { canAdmin, canModerate, getCurrentUser } from "@/lib/session";
 
 const roles: Record<string, string> = {
   admin: "管理者",
@@ -39,6 +39,12 @@ export async function Header() {
             <Link href="/dashboard" className="icon-link">
               <LayoutDashboard size={17} />
               <span>整理</span>
+            </Link>
+          ) : null}
+          {currentUser && canAdmin(currentUser.role) ? (
+            <Link href="/admin" className="icon-link">
+              <Shield size={17} />
+              <span>管理</span>
             </Link>
           ) : null}
         </nav>

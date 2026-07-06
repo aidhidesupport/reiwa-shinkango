@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, EyeOff, Gauge, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock3, EyeOff, Gauge, GitMerge, MessageSquare, ShieldCheck } from "lucide-react";
 import { hideProposal, resolveReport, setRecommendation } from "@/app/actions";
 import { EmptyState } from "@/components/EmptyState";
 import { RECOMMENDATION_LEVELS } from "@/lib/labels";
 import { getCurrentUser, canEditRecommendations } from "@/lib/session";
+import { countLabels, scoreProposal } from "@/lib/scoring";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = {
@@ -11,6 +12,9 @@ export const metadata = {
 };
 
 export const dynamic = "force-dynamic";
+
+const positiveLabels = ["natural", "clear", "concise", "accurate", "document_friendly", "conversation_friendly"];
+const negativeLabels = ["too_stiff", "too_long", "meaning_shift", "old_fashioned", "too_coined"];
 
 export default async function DashboardPage() {
   const currentUser = await getCurrentUser();
@@ -28,7 +32,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [openReports, candidateProposals, drafts, stats] = await Promise.all([
+  const [openReports, candidateProposals, reviewProposals, staleTerms, discussionProposals, duplicateTermSource, drafts, stats] = await Promise.all([
     prisma.report.findMany({
       where: { status: "open" },
       take: 8,
@@ -39,7 +43,7 @@ export default async function DashboardPage() {
       where: {
         status: { in: ["active", "draft"] },
       },
-      take: 8,
+      take: 20,
       orderBy: { updatedAt: "desc" },
       include: {
         sense: {
@@ -51,6 +55,68 @@ export default async function DashboardPage() {
         evaluations: true,
         examples: true,
       },
+    }),
+    prisma.translationProposal.findMany({
+      where: {
+        status: { not: "hidden" },
+        evaluations: { some: {} },
+      },
+      take: 80,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        sense: {
+          include: {
+            term: true,
+            domain: true,
+          },
+        },
+        evaluations: true,
+        examples: true,
+      },
+    }),
+    prisma.term.findMany({
+      take: 8,
+      orderBy: { updatedAt: "asc" },
+      include: {
+        senses: {
+          include: {
+            proposals: true,
+            recommendations: true,
+          },
+        },
+      },
+    }),
+    prisma.translationProposal.findMany({
+      where: {
+        status: { not: "hidden" },
+        comments: { some: {} },
+      },
+      take: 8,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        sense: {
+          include: {
+            term: true,
+            domain: true,
+          },
+        },
+        comments: {
+          take: 3,
+          orderBy: { createdAt: "desc" },
+          include: { user: true },
+        },
+      },
+    }),
+    prisma.term.findMany({
+      select: {
+        id: true,
+        headword: true,
+        slug: true,
+        normalizedHeadword: true,
+        originalWord: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: "desc" },
     }),
     prisma.translationProposal.count({ where: { status: "draft" } }),
     Promise.all([
@@ -79,6 +145,31 @@ export default async function DashboardPage() {
 
   const [termCount, proposalCount, recommendationCount, reportCount] = stats;
   const canEdit = currentUser ? canEditRecommendations(currentUser.role) : false;
+  const recommendedCandidates = [...candidateProposals]
+    .sort((a, b) => scoreProposal(b) - scoreProposal(a))
+    .slice(0, 8);
+  const splitEvaluationProposals = reviewProposals
+    .filter((proposal) => {
+      const counts = countLabels(proposal.evaluations);
+      const positiveCount = positiveLabels.reduce((sum, label) => sum + (counts[label] ?? 0), 0);
+      const negativeCount = negativeLabels.reduce((sum, label) => sum + (counts[label] ?? 0), 0);
+      return positiveCount > 0 && negativeCount > 0;
+    })
+    .slice(0, 6);
+  const staleReviewTerms = staleTerms
+    .filter((term) => term.senses.some((sense) => sense.proposals.length > 0 && sense.recommendations.length === 0))
+    .slice(0, 6);
+  const duplicateGroups = Array.from(
+    duplicateTermSource.reduce((groups, term) => {
+      const key = term.normalizedHeadword || term.originalWord?.toLowerCase();
+      if (!key) return groups;
+      groups.set(key, [...(groups.get(key) ?? []), term]);
+      return groups;
+    }, new Map<string, typeof duplicateTermSource>()),
+  )
+    .map(([, terms]) => terms)
+    .filter((terms) => terms.length > 1)
+    .slice(0, 5);
 
   return (
     <div className="page-shell">
@@ -116,7 +207,7 @@ export default async function DashboardPage() {
             <Gauge size={20} />
           </div>
           <div className="queue-list">
-            {candidateProposals.map((proposal) => (
+            {recommendedCandidates.map((proposal) => (
               <article key={proposal.id} className="queue-item">
                 <div>
                   <p className="eyebrow">
@@ -124,7 +215,7 @@ export default async function DashboardPage() {
                   </p>
                   <h3>{proposal.text}</h3>
                   <p>{proposal.fitContext}</p>
-                  <small>評価 {proposal.evaluations.length} / 使用例 {proposal.examples.length}</small>
+                  <small>スコア {scoreProposal(proposal)} / 評価 {proposal.evaluations.length} / 使用例 {proposal.examples.length}</small>
                 </div>
                 <Link href={`/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`} className="icon-link">
                   <ArrowRight size={17} />
@@ -207,6 +298,121 @@ export default async function DashboardPage() {
             <p>{drafts}件の訳語案に使用例が不足しています。</p>
           </div>
         </aside>
+      </section>
+
+      <section className="queue-grid">
+        <div className="content-column">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">重複</p>
+              <h2>重複候補</h2>
+            </div>
+            <GitMerge size={20} />
+          </div>
+          <div className="queue-list">
+            {duplicateGroups.length === 0 ? <p className="muted">明確な重複候補はありません。</p> : null}
+            {duplicateGroups.map((group) => (
+              <article key={group[0].normalizedHeadword} className="queue-item">
+                <div>
+                  <h3>{group.map((term) => term.headword).join(" / ")}</h3>
+                  <p>{group[0].normalizedHeadword}</p>
+                </div>
+                <div className="queue-links">
+                  {group.map((term) => (
+                    <Link key={term.id} href={`/terms/${term.slug}`} className="text-link">
+                      {term.headword}
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="content-column">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">評価</p>
+              <h2>評価が割れている訳語</h2>
+            </div>
+            <Gauge size={20} />
+          </div>
+          <div className="queue-list">
+            {splitEvaluationProposals.length === 0 ? <p className="muted">評価が大きく割れている訳語はありません。</p> : null}
+            {splitEvaluationProposals.map((proposal) => {
+              const counts = countLabels(proposal.evaluations);
+              return (
+                <article key={proposal.id} className="queue-item">
+                  <div>
+                    <p className="eyebrow">
+                      {proposal.sense.term.headword} / {proposal.sense.domain?.name ?? "未分類"}
+                    </p>
+                    <h3>{proposal.text}</h3>
+                    <p>肯定 {positiveLabels.reduce((sum, label) => sum + (counts[label] ?? 0), 0)} / 懸念 {negativeLabels.reduce((sum, label) => sum + (counts[label] ?? 0), 0)}</p>
+                  </div>
+                  <Link href={`/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`} className="icon-link">
+                    <ArrowRight size={17} />
+                    <span>確認</span>
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="content-column">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">古い項目</p>
+              <h2>推奨訳が未整理</h2>
+            </div>
+            <Clock3 size={20} />
+          </div>
+          <div className="queue-list">
+            {staleReviewTerms.length === 0 ? <p className="muted">未整理の古い項目はありません。</p> : null}
+            {staleReviewTerms.map((term) => (
+              <article key={term.id} className="queue-item">
+                <div>
+                  <h3>{term.headword}</h3>
+                  <p>最終更新: {term.updatedAt.toLocaleDateString("ja-JP")}</p>
+                </div>
+                <Link href={`/terms/${term.slug}`} className="icon-link">
+                  <ArrowRight size={17} />
+                  <span>確認</span>
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="content-column">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">議論</p>
+              <h2>コメントが増えた訳語</h2>
+            </div>
+            <MessageSquare size={20} />
+          </div>
+          <div className="queue-list">
+            {discussionProposals.length === 0 ? <p className="muted">最近の議論はありません。</p> : null}
+            {discussionProposals.map((proposal) => (
+              <article key={proposal.id} className="queue-item">
+                <div>
+                  <p className="eyebrow">
+                    {proposal.sense.term.headword} / {proposal.sense.domain?.name ?? "未分類"}
+                  </p>
+                  <h3>{proposal.text}</h3>
+                  <p>{proposal.comments[0]?.body ?? "コメントあり"}</p>
+                  <small>{proposal.comments.length}件表示中 / 最新: {proposal.comments[0]?.createdAt.toLocaleDateString("ja-JP")}</small>
+                </div>
+                <Link href={`/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`} className="icon-link">
+                  <ArrowRight size={17} />
+                  <span>確認</span>
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );

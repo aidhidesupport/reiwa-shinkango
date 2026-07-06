@@ -20,6 +20,10 @@ describe("term search scoring", () => {
     expect([related, exact].sort(compareTermSearchResults("えびでんす"))).toEqual([exact, related]);
   });
 
+  it("matches original words without case sensitivity", () => {
+    expect(scoreTermSearchMatch(exact, "EVIDENCE")).toBeGreaterThan(scoreTermSearchMatch(related, "EVIDENCE"));
+  });
+
   it("scores tags, domains, proposals, and examples as searchable fields", () => {
     expect(
       scoreTermSearchMatch(
@@ -39,4 +43,3 @@ describe("term search scoring", () => {
     ).toBeGreaterThan(0);
   });
 });
-
