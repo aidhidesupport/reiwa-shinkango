@@ -59,7 +59,7 @@ RATE_LIMIT_REPORTS_PER_WINDOW="8"
 ```
 
 `ADMIN_PASSWORD` は初期投入用です。公開前から強い値にして、漏れないように管理します。
-`DATA_LICENSE` は `site-only`、`CC-BY-4.0`、`CC-BY-SA-4.0` のいずれかを明示します。初回公開は `site-only` とします。設定後は `npm run check:production-env` を実行します。
+`DATA_LICENSE` は `site-only` に固定します。投稿者同意をバージョン管理する仕組みを実装するまで変更しません。設定後は `npm run check:production-env` を実行します。
 運営責任者の氏名と連絡可能な住所はSupabaseやリポジトリの公開設定へ保存せず、本人から問い合わせ先へ請求があった場合に遅滞なく回答できるよう、安全な場所で管理します。
 
 ## 5. マイグレーションと初期データ
@@ -103,6 +103,8 @@ curl -f https://your-domain.example/api/health
 その後、`ADMIN_EMAIL` と `ADMIN_PASSWORD` で `/login` に入り、`/dashboard` が開けることを確認します。
 
 ## 8. バックアップ
+
+当面はSupabase Freeを使用するため、自動バックアップはありません。Productionは日次または重要変更前、Stagingは検証終了時に手動バックアップを取得します。
 
 `DATABASE_URL` または `DIRECT_URL` を接続できる値にして実行します。
 

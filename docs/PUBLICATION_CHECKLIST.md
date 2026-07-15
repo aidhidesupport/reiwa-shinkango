@@ -6,14 +6,15 @@
 
 ## 決定済みの方針
 
-- 投稿データ: 初回公開は `site-only`。CC BY 4.0 / CC BY-SA 4.0への変更は、投稿者への条件提示と規約改定方法を法務確認してから行う。
-- アプリ: Vercel Pro。Function Region は東京 `hnd1`（`vercel.json` に設定済み）。
-- PostgreSQL: Supabase。Production は東京 `ap-northeast-1` の Pro、Staging は別プロジェクトを使用する。
-- ドメイン: 独自ドメインを1つ取得し、apex（例: `example.jp`）を正規URL、`www` をapexへリダイレクトする。
-- バックアップ: Supabaseの日次バックアップに加え、日次または変更前に `pg_dump` を取得し、Supabaseとは別の暗号化ストレージへ保管する。
+- 運営: 当面は個人・非商用。月額上限は0円。
+- 投稿データ: `site-only` に固定する。既存投稿へ遡ってCCライセンスを適用しない。
+- アプリ: Vercel Hobby。Function Region は東京 `hnd1`（`vercel.json` に設定済み）。
+- PostgreSQL: Supabase Free。ProductionとStagingを東京 `ap-northeast-1` の別プロジェクトにする。
+- ドメイン: 独自ドメインは取得せず、空いていれば `reiwa-shinkango.vercel.app` を使用する。
+- バックアップ: Freeには自動バックアップがないため、日次または重要変更前に `pg_dump` を取得し、端末外の暗号化ストレージへ保管する。
 - レート制限初期値: 60秒につき、投稿12件、コメント12件、通報8件。同一アカウント単位。公開後1週間はログを毎日確認し、荒らしまたは誤検知に応じて調整する。
 
-Vercel Hobbyは個人・非商用向けに限定されるため、公開運用ではProを採用します。Supabase Freeには自動バックアップがないため、実投稿を保持するProductionにはProを使用します。StagingをFreeにする場合も、検証終了時に手動バックアップを取ります。
+この無料構成は、Vercel Hobbyの個人・非商用条件、Supabase Freeの容量・休止条件を守る間だけ使用します。収益化または業務利用を始める前にVercelのプランを再検討します。Supabase Freeには自動バックアップがないため、手動バックアップを運用条件とします。
 
 参考:
 
@@ -28,8 +29,8 @@ Vercel Hobbyは個人・非商用向けに限定されるため、公開運用�
 ### 1. 法務・運営者情報
 
 - [ ] `/legal/terms`、`/legal/privacy`、`/rules` の内容を読み、実際の運用と一致することを確認した。
-- [ ] 必要に応じて日本法に詳しい専門家へ最終確認を依頼した。
-- [ ] パスワードマネージャー等の暗号化された安全な場所に、運営責任者の本名、郵便番号、住所、連絡先、記録日、開示回答テンプレートを保存した。
+- [ ] 必要性が生じた段階で、日本法に詳しい専門家へ確認を依頼する（初回公開時は保留）。
+- [ ] 運営責任者の氏名・住所を請求された場合、遅滞なく回答できることを確認した（特定の保管アプリは必須としない）。
 - [ ] 上記の個人情報をGit、Vercel、Supabase、公開ドキュメントへ保存していない。
 - [ ] 問い合わせ用メール `aidhide.support@gmail.com` を受信でき、二要素認証と復旧手段を設定した。
 
@@ -38,11 +39,11 @@ Vercel Hobbyは個人・非商用向けに限定されるため、公開運用�
 ### 2. サービス契約とドメイン
 
 - [ ] Supabaseで東京リージョンのStagingプロジェクトを作成した。
-- [ ] Supabaseで東京リージョンのProduction Proプロジェクトを作成した。
+- [ ] Supabaseで東京リージョンのProduction Freeプロジェクトを作成した。
 - [ ] Vercelプロジェクトを作成し、このGitリポジトリを接続した。
-- [ ] Vercel Proを選択した。
-- [ ] 使用する独自ドメインを取得した: `________________________`
-- [ ] Vercelへapexと`www`を登録し、正規URLへのリダイレクトとSSL発行を確認した。
+- [ ] Vercel Hobbyを選択し、個人・非商用であることを確認した。
+- [ ] 無料公開URLを確定した: `________________________________.vercel.app`
+- [ ] 無料公開URLでSSL発行を確認した。
 - [ ] VercelのProduction Branchを確認し、Staging用ブランチのPreview環境をStaging DBへ接続した。
 
 ### 3. 本番・ステージング環境変数
@@ -77,7 +78,7 @@ RATE_LIMIT_COMMENTS_PER_WINDOW=12
 RATE_LIMIT_REPORTS_PER_WINDOW=8
 ```
 
-`SESSION_SECRET` は `openssl rand -base64 48` 等で生成し、`ADMIN_PASSWORD` はパスワードマネージャーで20文字以上の固有値を生成します。StagingとProductionで同じ秘密値を使わないでください。
+`SESSION_SECRET` は `openssl rand -base64 48` 等で生成し、`ADMIN_PASSWORD` はパスワード生成機能等で20文字以上の固有値にします。StagingとProductionで同じ秘密値を使わないでください。
 
 ### 4. Stagingの自動検証
 

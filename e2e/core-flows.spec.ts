@@ -20,6 +20,7 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await registrationForm.getByLabel("ハンドル").fill("e2e-user");
   await registrationForm.getByLabel("メールアドレス").fill("user-e2e@example.test");
   await registrationForm.getByLabel("パスワード").fill("user-e2e-password");
+  await registrationForm.getByRole("checkbox").check();
   await registrationForm.getByRole("button", { name: "登録" }).click();
   await expect(page.getByRole("link", { name: "E2E利用者" })).toBeVisible();
 
@@ -73,6 +74,7 @@ test("プロフィール変更と管理者の一時パスワード発行が機�
   await registrationForm.getByLabel("ハンドル").fill("reset-e2e-user");
   await registrationForm.getByLabel("メールアドレス").fill("reset-e2e@example.test");
   await registrationForm.getByLabel("パスワード").fill("reset-user-password");
+  await registrationForm.getByRole("checkbox").check();
   await registrationForm.getByRole("button", { name: "登録" }).click();
   await page.getByRole("button", { name: "ログアウト" }).click();
   await page.goto("/login");
@@ -117,6 +119,7 @@ test("通報の非表示・処理・却下とユーザー停止・解除を一�
   await registrationForm.getByLabel("ハンドル").fill("moderation-e2e-user");
   await registrationForm.getByLabel("メールアドレス").fill("moderation-e2e@example.test");
   await registrationForm.getByLabel("パスワード").fill("moderation-user-password");
+  await registrationForm.getByRole("checkbox").check();
   await registrationForm.getByRole("button", { name: "登録" }).click();
   await expect(page.getByRole("link", { name: "モデレーション対象者" })).toBeVisible();
 
@@ -197,4 +200,72 @@ test("通報の非表示・処理・却下とユーザー停止・解除を一�
   await restoredLogin.getByLabel("パスワード").fill("moderation-user-password");
   await restoredLogin.getByRole("button", { name: "ログイン" }).click();
   await expect(page.getByRole("link", { name: "モデレーション対象者" })).toBeVisible();
+});
+
+test("改変された項目・意味・訳語案IDの組み合わせを拒否する", async ({ page }) => {
+  await page.goto("/login");
+  const loginForm = page.locator("form").filter({ has: page.getByRole("heading", { name: "ログイン", exact: true }) });
+  await loginForm.getByLabel("メールアドレス").fill("admin-e2e@example.test");
+  await loginForm.getByLabel("パスワード").fill("local-e2e-admin-password");
+  await loginForm.getByRole("button", { name: "ログイン" }).click();
+  await expect(page.getByRole("link", { name: "管理", exact: true })).toBeVisible();
+
+  await page.goto("/terms/new");
+  await page.getByLabel("横文字").fill("関連検証A");
+  await page.getByLabel("概要").fill("関連IDの改変を拒否できることを確認する項目です。");
+  await page.getByLabel("最初の意味").fill("検証対象の意味");
+  await page.getByLabel("意味の説明").fill("使用例の関連先が一致することを検証します。");
+  await page.getByLabel("訳語案", { exact: true }).fill("関連検証訳");
+  await page.getByLabel("合う文脈").fill("関連性の検証");
+  await page.getByRole("button", { name: "項目を作成" }).click();
+  await expect(page.locator(".proposal-card").filter({ hasText: "関連検証訳" })).toBeVisible();
+  const firstTermUrl = page.url();
+
+  await page.goto("/terms/new");
+  await page.getByLabel("横文字").fill("関連検証B");
+  await page.getByLabel("概要").fill("不正な関連先として使用する別の項目です。");
+  await page.getByLabel("最初の意味").fill("別項目の意味");
+  await page.getByLabel("意味の説明").fill("最初の項目とは関連しない別の説明です。");
+  await page.getByRole("button", { name: "項目を作成" }).click();
+  await expect(page.getByRole("heading", { name: "関連検証B", exact: true })).toBeVisible();
+  const secondTermId = await page.locator('input[name="termId"]').first().inputValue();
+
+  await page.goto(firstTermUrl);
+  const proposalCard = page.locator(".proposal-card").filter({ hasText: "関連検証訳" });
+  await expect(proposalCard).toBeVisible();
+  await proposalCard.locator("summary").filter({ hasText: "使用例を追加" }).click();
+  const exampleForm = proposalCard.locator("form.example-form");
+  await expect(exampleForm).toBeVisible();
+  await exampleForm.locator('input[name="termId"]').evaluate((input, termId) => {
+    (input as HTMLInputElement).value = termId;
+  }, secondTermId);
+  await exampleForm.getByLabel("元文").fill("関連検証Aの使用例です。");
+  await exampleForm.getByLabel("言い換え").fill("不整合な関連は保存しません。");
+  await exampleForm.getByRole("button", { name: "使用例を追加" }).click();
+  await expect(exampleForm.getByRole("alert")).toHaveText(
+    "投稿対象の組み合わせが正しくありません。画面を再読み込みしてください。",
+  );
+});
+
+test("同一アカウントへのログイン総当たりを制限する", async ({ page }) => {
+  await page.goto("/login");
+  const loginForm = page.locator("form").filter({ has: page.getByRole("heading", { name: "ログイン", exact: true }) });
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await loginForm.getByLabel("メールアドレス").fill("throttled-e2e@example.test");
+    await loginForm.getByLabel("パスワード").fill("incorrect-password");
+    const responsePromise = page.waitForResponse((response) => response.request().method() === "POST");
+    await loginForm.getByRole("button", { name: "ログイン" }).click();
+    await responsePromise;
+    await expect(loginForm.getByRole("alert")).toHaveText("メールアドレスまたはパスワードが正しくありません。");
+  }
+
+  await loginForm.getByLabel("メールアドレス").fill("throttled-e2e@example.test");
+  await loginForm.getByLabel("パスワード").fill("incorrect-password");
+  const responsePromise = page.waitForResponse((response) => response.request().method() === "POST");
+  await loginForm.getByRole("button", { name: "ログイン" }).click();
+  await responsePromise;
+  await expect(loginForm.getByRole("alert")).toHaveText(
+    "ログイン試行が多すぎます。15分ほど時間をおいてください。",
+  );
 });

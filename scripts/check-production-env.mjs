@@ -53,8 +53,8 @@ if (adminPassword.length < 16 || ["change-me-admin-password", "password", "admin
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) || (!allowLocal && reservedEmailDomainPattern.test(contactEmail))) {
   errors.push("CONTACT_EMAIL must be a public operational email address.");
 }
-if (!["site-only", "CC-BY-4.0", "CC-BY-SA-4.0"].includes(dataLicense)) {
-  errors.push("DATA_LICENSE must be site-only, CC-BY-4.0, or CC-BY-SA-4.0.");
+if (dataLicense !== "site-only") {
+  errors.push("DATA_LICENSE must remain site-only until versioned contribution consent is implemented.");
 }
 requireIntegerInRange("RATE_LIMIT_WINDOW_SECONDS", rateLimitWindow, 10, 3600);
 requireIntegerInRange("RATE_LIMIT_POSTS_PER_WINDOW", rateLimitPosts, 1, 100);

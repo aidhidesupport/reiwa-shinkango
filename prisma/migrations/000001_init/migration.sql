@@ -8,8 +8,6 @@ CREATE TABLE "User" (
     "handle" TEXT NOT NULL,
     "email" TEXT,
     "passwordHash" TEXT,
-    "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
-    "sessionVersion" INTEGER NOT NULL DEFAULT 0,
     "role" TEXT NOT NULL DEFAULT 'user',
     "reputation" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -187,23 +185,6 @@ CREATE TABLE "Report" (
     CONSTRAINT "Report_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "EditSuggestion" (
-    "id" TEXT NOT NULL,
-    "targetType" TEXT NOT NULL,
-    "targetId" TEXT NOT NULL,
-    "proposedJson" TEXT NOT NULL,
-    "reason" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'pending',
-    "createdById" TEXT NOT NULL,
-    "reviewedById" TEXT,
-    "reviewNote" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "reviewedAt" TIMESTAMP(3),
-
-    CONSTRAINT "EditSuggestion_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_handle_key" ON "User"("handle");
 
@@ -227,12 +208,6 @@ CREATE UNIQUE INDEX "Evaluation_proposalId_userId_key" ON "Evaluation"("proposal
 
 -- CreateIndex
 CREATE INDEX "Revision_entityType_entityId_idx" ON "Revision"("entityType", "entityId");
-
--- CreateIndex
-CREATE INDEX "EditSuggestion_status_createdAt_idx" ON "EditSuggestion"("status", "createdAt");
-
--- CreateIndex
-CREATE INDEX "EditSuggestion_targetType_targetId_idx" ON "EditSuggestion"("targetType", "targetId");
 
 -- AddForeignKey
 ALTER TABLE "TermTag" ADD CONSTRAINT "TermTag_termId_fkey" FOREIGN KEY ("termId") REFERENCES "Term"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -297,8 +272,3 @@ ALTER TABLE "Revision" ADD CONSTRAINT "Revision_createdById_fkey" FOREIGN KEY ("
 -- AddForeignKey
 ALTER TABLE "Report" ADD CONSTRAINT "Report_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "EditSuggestion" ADD CONSTRAINT "EditSuggestion_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EditSuggestion" ADD CONSTRAINT "EditSuggestion_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

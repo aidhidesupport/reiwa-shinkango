@@ -18,7 +18,7 @@ RATE_LIMIT_COMMENTS_PER_WINDOW="12"
 RATE_LIMIT_REPORTS_PER_WINDOW="8"
 ```
 
-`DATA_LICENSE` は `site-only`、`CC-BY-4.0`、`CC-BY-SA-4.0` のいずれかです。初回公開は保守的な `site-only` を使用します。レート制限は同一アカウントに対する1ウィンドウ当たりの上限です。起動・PostgreSQLビルド前に以下で設定漏れ、弱い認証情報、無効なレート制限値を検査できます。
+`DATA_LICENSE` は `site-only` に固定します。既存投稿へ遡って条件を変えられないため、バージョン付きの投稿者同意を別途設計するまでCCライセンスへ変更しません。レート制限は同一アカウントに対する1ウィンドウ当たりの上限です。起動・PostgreSQLビルド前に以下で設定漏れ、弱い認証情報、無効なレート制限値を検査できます。
 
 公開ページでは運営名を `令和新漢語運営事務局` と表示します。運営責任者の氏名と連絡可能な住所は公開設定やリポジトリへ保存せず、本人から問い合わせ先へ請求があった場合に遅滞なく回答できるよう、運営者が安全な場所で管理します。
 
@@ -30,12 +30,13 @@ Supabase で運用する場合は [Supabase 運用手順](./SUPABASE.md) を参�
 
 ## 採用構成
 
-- アプリ: Vercel Pro（Function Region `hnd1`）
-- DB: Supabase PostgreSQL（東京 `ap-northeast-1`。ProductionはPro、Stagingは別プロジェクト）
+- 運営条件: 個人・非商用、月額上限0円
+- アプリ: Vercel Hobby（Function Region `hnd1`）
+- DB: Supabase Free PostgreSQL（東京 `ap-northeast-1`。ProductionとStagingは別プロジェクト）
 - Supabase Auth と anon key は初期構成では不要
-- バックアップ: Supabaseの日次バックアップ + 日次または重要変更前の `pg_dump`
+- バックアップ: 日次または重要変更前の `pg_dump` を端末外の暗号化ストレージへ退避
 - 監視: `/api/health` を外形監視
-- ドメイン: 独自ドメイン、HTTPS必須
+- ドメイン: 無料の `*.vercel.app`、HTTPS必須
 
 契約、環境変数、受入試験の担当分けは [公開前チェックリスト](./PUBLICATION_CHECKLIST.md) を参照してください。
 

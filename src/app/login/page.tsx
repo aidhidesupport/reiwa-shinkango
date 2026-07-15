@@ -1,4 +1,5 @@
 import { LogIn, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { signInWithState, signUpWithState } from "@/app/actions";
 import { ActionForm } from "@/components/ActionForm";
 
@@ -30,11 +31,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <input type="hidden" name="returnTo" value={returnTo} />
           <label>
             メールアドレス
-            <input name="email" type="email" required autoComplete="email" />
+            <input name="email" type="email" required maxLength={254} autoComplete="email" />
           </label>
           <label>
             パスワード
-            <input name="password" type="password" required minLength={8} autoComplete="current-password" />
+            <input name="password" type="password" required maxLength={256} autoComplete="current-password" />
           </label>
           <button type="submit" className="button">
             <LogIn size={17} />
@@ -50,19 +51,26 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <input type="hidden" name="returnTo" value={returnTo} />
           <label>
             表示名
-            <input name="displayName" required autoComplete="name" />
+            <input name="displayName" required maxLength={80} autoComplete="name" />
           </label>
           <label>
             ハンドル
-            <input name="handle" placeholder="省略可" />
+            <input name="handle" maxLength={30} placeholder="省略可" />
           </label>
           <label>
             メールアドレス
-            <input name="email" type="email" required autoComplete="email" />
+            <input name="email" type="email" required maxLength={254} autoComplete="email" />
           </label>
           <label>
             パスワード
-            <input name="password" type="password" required minLength={8} autoComplete="new-password" />
+            <input name="password" type="password" required minLength={12} maxLength={256} autoComplete="new-password" />
+          </label>
+          <label className="check-line">
+            <input name="acceptTerms" type="checkbox" value="yes" required />
+            <span>
+              <Link href="/legal/terms" target="_blank">利用規約</Link>と
+              <Link href="/rules" target="_blank">投稿データ方針</Link>（サイト内利用限定）に同意する
+            </span>
           </label>
           <button type="submit" className="button secondary">
             <UserPlus size={17} />

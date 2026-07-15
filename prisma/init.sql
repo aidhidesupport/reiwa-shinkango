@@ -1,5 +1,6 @@
 PRAGMA foreign_keys = OFF;
 
+DROP TABLE IF EXISTS "RateLimitBucket";
 DROP TABLE IF EXISTS "EditSuggestion";
 DROP TABLE IF EXISTS "Report";
 DROP TABLE IF EXISTS "Revision";
@@ -25,6 +26,9 @@ CREATE TABLE "User" (
   "passwordHash" TEXT,
   "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
   "sessionVersion" INTEGER NOT NULL DEFAULT 0,
+  "termsAcceptedAt" DATETIME,
+  "termsVersion" TEXT,
+  "contributionPolicy" TEXT,
   "role" TEXT NOT NULL DEFAULT 'user',
   "reputation" INTEGER NOT NULL DEFAULT 0,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -218,3 +222,15 @@ CREATE TABLE "EditSuggestion" (
 
 CREATE INDEX "EditSuggestion_status_createdAt_idx" ON "EditSuggestion"("status", "createdAt");
 CREATE INDEX "EditSuggestion_targetType_targetId_idx" ON "EditSuggestion"("targetType", "targetId");
+
+CREATE TABLE "RateLimitBucket" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "kind" TEXT NOT NULL,
+  "keyHash" TEXT NOT NULL,
+  "windowStart" DATETIME NOT NULL,
+  "count" INTEGER NOT NULL DEFAULT 1,
+  "expiresAt" DATETIME NOT NULL
+);
+
+CREATE UNIQUE INDEX "RateLimitBucket_kind_keyHash_windowStart_key" ON "RateLimitBucket"("kind", "keyHash", "windowStart");
+CREATE INDEX "RateLimitBucket_expiresAt_idx" ON "RateLimitBucket"("expiresAt");

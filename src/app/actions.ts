@@ -11,8 +11,10 @@ import {
   hashPassword,
   verifyPassword,
 } from "@/lib/auth";
+import { enforceAuthRateLimit } from "@/lib/auth-rate-limit";
 import type { ActionState } from "@/lib/action-state";
 import { joinLabels, normalizeForSearch, slugifyHeadword } from "@/lib/normalize";
+import { CONTRIBUTION_POLICY, TERMS_VERSION } from "@/lib/public-config";
 import { getRateLimitPolicy, type RateLimitKind } from "@/lib/rate-limit";
 import { canAdmin, canEditRecommendations, canModerate, requireActiveUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -104,6 +106,107 @@ async function uniqueHandle(input: string) {
   return handle;
 }
 
+const invalidTargetMessage = "投稿対象の組み合わせが正しくありません。画面を再読み込みしてください。";
+
+async function requireTermTarget(termId: string, termSlug: string) {
+  const term = await prisma.term.findUnique({ where: { id: termId }, select: { slug: true } });
+  if (!term || term.slug !== termSlug) throw new Error(invalidTargetMessage);
+}
+
+async function requireSenseTarget({
+  senseId,
+  termId,
+  termSlug,
+}: {
+  senseId: string;
+  termId: string;
+  termSlug: string;
+}) {
+  const sense = await prisma.sense.findUnique({
+    where: { id: senseId },
+    select: { termId: true, term: { select: { slug: true } } },
+  });
+  if (!sense || sense.termId !== termId || sense.term.slug !== termSlug) {
+    throw new Error(invalidTargetMessage);
+  }
+}
+
+async function requireProposalTarget({
+  proposalId,
+  senseId,
+  termId,
+  termSlug,
+}: {
+  proposalId: string;
+  senseId?: string;
+  termId?: string;
+  termSlug: string;
+}) {
+  const proposal = await prisma.translationProposal.findUnique({
+    where: { id: proposalId },
+    select: {
+      senseId: true,
+      sense: { select: { termId: true, term: { select: { slug: true } } } },
+    },
+  });
+  if (
+    !proposal
+    || (senseId !== undefined && proposal.senseId !== senseId)
+    || (termId !== undefined && proposal.sense.termId !== termId)
+    || proposal.sense.term.slug !== termSlug
+  ) {
+    throw new Error(invalidTargetMessage);
+  }
+}
+
+async function requireExampleTarget({
+  exampleId,
+  proposalId,
+  termSlug,
+}: {
+  exampleId: string;
+  proposalId: string;
+  termSlug: string;
+}) {
+  const example = await prisma.usageExample.findUnique({
+    where: { id: exampleId },
+    select: { proposalId: true, term: { select: { slug: true } } },
+  });
+  if (!example || example.proposalId !== proposalId || example.term.slug !== termSlug) {
+    throw new Error(invalidTargetMessage);
+  }
+}
+
+async function requireCommentTarget({
+  commentId,
+  proposalId,
+  termSlug,
+}: {
+  commentId: string;
+  proposalId: string;
+  termSlug: string;
+}) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      proposalId: true,
+      proposal: { select: { sense: { select: { term: { select: { slug: true } } } } } },
+    },
+  });
+  if (!comment || comment.proposalId !== proposalId || comment.proposal?.sense.term.slug !== termSlug) {
+    throw new Error(invalidTargetMessage);
+  }
+}
+
+async function requireEditableTarget(targetType: "sense" | "proposal" | "example", targetId: string) {
+  const exists = targetType === "sense"
+    ? await prisma.sense.findUnique({ where: { id: targetId }, select: { id: true } })
+    : targetType === "proposal"
+      ? await prisma.translationProposal.findUnique({ where: { id: targetId }, select: { id: true } })
+      : await prisma.usageExample.findUnique({ where: { id: targetId }, select: { id: true } });
+  if (!exists) throw new Error("修正対象が見つかりません。");
+}
+
 async function enforceRateLimit(userId: string, kind: RateLimitKind) {
   const policy = getRateLimitPolicy();
   const since = new Date(Date.now() - policy.windowSeconds * 1000);
@@ -131,9 +234,16 @@ const termSchema = z.object({
   senseDescription: z.string().min(8),
 });
 
-const authSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+const signInSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(1).max(256),
+});
+
+const signUpSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(12, "パスワードは12文字以上にしてください。").max(256),
+  displayName: z.string().trim().min(1).max(80),
+  acceptTerms: z.literal("yes", { error: "利用規約と投稿データ方針への同意が必要です。" }),
 });
 
 const roleSchema = z.enum(["user", "trusted", "editor", "admin"]);
@@ -168,11 +278,13 @@ export async function signUp(formData: FormData) {
   const displayName = text(formData, "displayName");
   const handleInput = text(formData, "handle") || displayName || email.split("@")[0];
   const returnTo = safePath(text(formData, "returnTo"), "/");
-  const parsed = authSchema.extend({ displayName: z.string().min(1) }).parse({
+  const parsed = signUpSchema.parse({
     email,
     password,
     displayName,
+    acceptTerms: text(formData, "acceptTerms"),
   });
+  await enforceAuthRateLimit("sign-up", parsed.email);
 
   const existing = await prisma.user.findUnique({ where: { email: parsed.email } });
   if (existing) {
@@ -185,6 +297,9 @@ export async function signUp(formData: FormData) {
       passwordHash: hashPassword(parsed.password),
       displayName: parsed.displayName,
       handle: await uniqueHandle(handleInput),
+      termsAcceptedAt: new Date(),
+      termsVersion: TERMS_VERSION,
+      contributionPolicy: CONTRIBUTION_POLICY,
       role: "user",
     },
   });
@@ -203,7 +318,8 @@ export async function signIn(formData: FormData) {
   const email = text(formData, "email").toLowerCase();
   const password = text(formData, "password");
   const returnTo = safePath(text(formData, "returnTo"), "/");
-  const parsed = authSchema.parse({ email, password });
+  const parsed = signInSchema.parse({ email, password });
+  await enforceAuthRateLimit("sign-in", parsed.email);
   const user = await prisma.user.findUnique({ where: { email: parsed.email } });
 
   if (!user || !verifyPassword(parsed.password, user.passwordHash)) {
@@ -348,6 +464,7 @@ export async function addSense(formData: FormData) {
   if (!termId || !title || !description) {
     throw new Error("意味の見出しと説明は必須です。");
   }
+  await requireTermTarget(termId, termSlug);
 
   const sense = await prisma.sense.create({
     data: {
@@ -386,6 +503,7 @@ export async function addProposal(formData: FormData) {
   if (!senseId || !termId || !proposalText) {
     throw new Error("訳語案の投稿に必要な値が不足しています。");
   }
+  await requireSenseTarget({ senseId, termId, termSlug });
 
   const proposal = await prisma.$transaction(async (tx) => {
     const createdProposal = await tx.translationProposal.create({
@@ -450,6 +568,7 @@ export async function addUsageExample(formData: FormData) {
   if (!termId || !senseId || !proposalId || !originalSentence || !rewrittenSentence) {
     throw new Error("使用例の追加に必要な値が不足しています。");
   }
+  await requireProposalTarget({ proposalId, senseId, termId, termSlug });
 
   const example = await prisma.$transaction(async (tx) => {
     const createdExample = await tx.usageExample.create({
@@ -494,6 +613,7 @@ export async function evaluateProposal(formData: FormData) {
   if (!proposalId) {
     throw new Error("評価対象が見つかりません。");
   }
+  await requireProposalTarget({ proposalId, termSlug });
 
   await prisma.evaluation.upsert({
     where: {
@@ -526,6 +646,7 @@ export async function addComment(formData: FormData) {
   if (!proposalId || body.length < 2) {
     throw new Error("コメント本文を入力してください。");
   }
+  await requireProposalTarget({ proposalId, termSlug });
 
   await prisma.comment.create({
     data: {
@@ -549,13 +670,14 @@ export async function setRecommendation(formData: FormData) {
   const senseId = text(formData, "senseId");
   const proposalId = text(formData, "proposalId");
   const termSlug = text(formData, "termSlug");
-  const level = text(formData, "level");
+  const level = z.enum(["tentative", "recommended", "limited", "discouraged"]).parse(text(formData, "level"));
   const context = text(formData, "context");
   const rationale = text(formData, "rationale");
 
   if (!senseId || !proposalId || !level || !context || !rationale) {
     throw new Error("推奨訳の設定に必要な値が不足しています。");
   }
+  await requireProposalTarget({ proposalId, senseId, termSlug });
 
   await prisma.$transaction(async (tx) => {
     const recommendation = await tx.recommendation.create({
@@ -602,6 +724,7 @@ export async function reportProposal(formData: FormData) {
   if (!proposalId) {
     throw new Error("通報対象が見つかりません。");
   }
+  await requireProposalTarget({ proposalId, termSlug });
 
   await createReport({
     userId: user.id,
@@ -625,6 +748,7 @@ export async function reportTerm(formData: FormData) {
   if (!termId || !termSlug) {
     throw new Error("通報対象が見つかりません。");
   }
+  await requireTermTarget(termId, termSlug);
 
   await createReport({
     userId: user.id,
@@ -649,6 +773,7 @@ export async function reportUsageExample(formData: FormData) {
   if (!exampleId || !proposalId || !termSlug) {
     throw new Error("通報対象が見つかりません。");
   }
+  await requireExampleTarget({ exampleId, proposalId, termSlug });
 
   await createReport({
     userId: user.id,
@@ -673,6 +798,7 @@ export async function reportComment(formData: FormData) {
   if (!commentId || !proposalId || !termSlug) {
     throw new Error("通報対象が見つかりません。");
   }
+  await requireCommentTarget({ commentId, proposalId, termSlug });
 
   await createReport({
     userId: user.id,
@@ -727,7 +853,7 @@ export async function resolveReport(formData: FormData) {
   }
 
   const reportId = text(formData, "reportId");
-  const status = text(formData, "status") || "resolved";
+  const status = z.enum(["resolved", "dismissed"]).parse(text(formData, "status") || "resolved");
   await prisma.report.update({
     where: { id: reportId },
     data: { status },
@@ -738,7 +864,7 @@ export async function resolveReport(formData: FormData) {
 
 export async function suspendUser(formData: FormData) {
   const user = await requireActiveUser();
-  if (!canModerate(user.role)) {
+  if (!canAdmin(user.role)) {
     throw new Error("ユーザーを停止する権限がありません。");
   }
 
@@ -981,6 +1107,7 @@ export async function submitEditSuggestion(formData: FormData) {
   const returnTo = safePath(text(formData, "returnTo"), "/");
   if (!targetId) throw new Error("修正対象が見つかりません。");
   if (reason.length < 5) throw new Error("修正理由を5文字以上で入力してください。");
+  await requireEditableTarget(targetType, targetId);
   const payload = editPayloadFromForm(targetType, formData);
   const applyNow = text(formData, "applyNow") === "1" && canEditRecommendations(user.role);
 
@@ -1126,6 +1253,9 @@ export async function changePassword(formData: FormData) {
   const currentPassword = text(formData, "currentPassword");
   const newPassword = text(formData, "newPassword");
   const confirmation = text(formData, "confirmation");
+  if (currentPassword.length > 256 || newPassword.length > 256 || confirmation.length > 256) {
+    throw new Error("パスワードは256文字以内にしてください。");
+  }
   if (!verifyPassword(currentPassword, user.passwordHash)) {
     throw new Error("現在のパスワードが正しくありません。");
   }
@@ -1160,6 +1290,7 @@ export async function resetUserPassword(formData: FormData) {
   const returnTo = safePath(text(formData, "returnTo"), "/admin");
   if (userId === user.id) throw new Error("自分のパスワードはアカウント画面から変更してください。");
   if (temporaryPassword.length < 12) throw new Error("一時パスワードは12文字以上にしてください。");
+  if (temporaryPassword.length > 256) throw new Error("一時パスワードは256文字以内にしてください。");
   const target = await prisma.user.findUnique({ where: { id: userId } });
   if (!target) throw new Error("ユーザーが見つかりません。");
 

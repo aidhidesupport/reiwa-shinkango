@@ -1,16 +1,16 @@
-import { getPublicPolicyConfig } from "@/lib/public-config";
+import { getPublicPolicyConfig, TERMS_EFFECTIVE_DATE_LABEL } from "@/lib/public-config";
 
 export const metadata = {
   title: "利用規約",
 };
 
 export default function TermsOfServicePage() {
-  const { contactEmail, operatorName, dataLicense, licenseLabel } = getPublicPolicyConfig();
+  const { contactEmail, operatorName, licenseLabel } = getPublicPolicyConfig();
   return (
     <div className="page-shell narrow prose-page">
       <p className="eyebrow">Legal</p>
       <h1>利用規約</h1>
-      <p>制定日・施行日: 2026年7月15日</p>
+      <p>制定日・施行日: {TERMS_EFFECTIVE_DATE_LABEL}</p>
       <p>この利用規約は、{operatorName}（以下「運営者」）が提供する「令和新漢語」の利用条件を定めます。利用者は、本サービスを利用することで本規約に同意します。</p>
       <h2>サービスの目的</h2>
       <p>本サービスは、横文字やカタカナ語について、文脈に応じた日本語の言い換え、使用例、評価および議論を共同で整理する場です。掲載内容の正確性、完全性、特定目的への適合性は保証されません。</p>
@@ -18,11 +18,7 @@ export default function TermsOfServicePage() {
       <p>利用者は正確な登録情報を使用し、認証情報を自身の責任で管理してください。アカウントを第三者へ貸与・譲渡することはできません。不正利用が疑われる場合は、速やかに運営者へ連絡してください。</p>
       <h2>投稿内容と許諾</h2>
       <p>投稿者は、自身が投稿に必要な権利を有することを保証します。著作権は投稿者または従来の権利者に留保されます。</p>
-      {dataLicense === "site-only" ? (
-        <p>投稿者は運営者に対し、本サービスの提供、検索表示、編集、要約、バックアップおよび品質改善に必要な範囲で、投稿を無償かつ非独占的に利用することを許諾します。投稿データを外部データセットとして再配布する場合は、事前に別途条件を明示します。</p>
-      ) : (
-        <p>投稿データは原則として {licenseLabel} の条件で提供されます。投稿者は運営者に対し、本サービスの提供、編集、要約、検索表示および同ライセンスに基づく公開に必要な範囲で利用を許諾します。</p>
-      )}
+      <p>投稿者は運営者に対し、本サービスの提供、検索表示、編集、要約、バックアップおよび品質改善に必要な範囲で、投稿を無償かつ非独占的に利用することを許諾します。投稿データを外部データセットとして再配布する場合は、既存投稿へ遡って条件を変更せず、対象者から別途同意を得ます。</p>
       <h2>禁止事項</h2>
       <p>法令違反、権利侵害、差別・侮辱・嫌がらせ、個人情報や秘密情報の投稿、必要範囲を超える引用、なりすまし、宣伝、荒らし、不正アクセス、過度な負荷、サービス運営の妨害を禁止します。実在個人を特定する情報、社外秘情報、出典のない長文転載は投稿しないでください。</p>
       <h2>編集、通報および利用停止</h2>
