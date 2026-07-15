@@ -1,5 +1,6 @@
 import { LogIn, UserPlus } from "lucide-react";
-import { signIn, signUp } from "@/app/actions";
+import { signInWithState, signUpWithState } from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
 
 type LoginPageProps = {
   searchParams: Promise<{ returnTo?: string }>;
@@ -21,7 +22,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </section>
 
       <section className="auth-grid">
-        <form action={signIn} className="stacked-form">
+        <ActionForm action={signInWithState} className="stacked-form" pendingMessage="ログインしています…">
           <h2>
             <LogIn size={20} />
             ログイン
@@ -39,9 +40,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <LogIn size={17} />
             <span>ログイン</span>
           </button>
-        </form>
+        </ActionForm>
 
-        <form action={signUp} className="stacked-form">
+        <ActionForm action={signUpWithState} className="stacked-form" pendingMessage="アカウントを作成しています…">
           <h2>
             <UserPlus size={20} />
             新規登録
@@ -67,16 +68,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <UserPlus size={17} />
             <span>登録</span>
           </button>
-        </form>
+        </ActionForm>
       </section>
 
-      <div className="note-box">
-        <strong>ローカル初期管理者</strong>
-        <p>
-          初期データ投入後は `admin@example.com` / `change-me-admin-password` で管理者ログインできます。
-          公開時は必ず環境変数で管理者メールとパスワードを変更してください。
-        </p>
-      </div>
+      {process.env.NODE_ENV !== "production" ? (
+        <div className="note-box">
+          <strong>ローカル初期管理者</strong>
+          <p>
+            初期データ投入後は `admin@example.com` / `change-me-admin-password` で管理者ログインできます。
+            公開時は必ず環境変数で管理者メールとパスワードを変更してください。
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

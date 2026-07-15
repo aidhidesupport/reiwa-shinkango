@@ -4,13 +4,16 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import {
   SESSION_COOKIE,
   createSessionToken,
   hashPassword,
   verifyPassword,
 } from "@/lib/auth";
+import type { ActionState } from "@/lib/action-state";
 import { joinLabels, normalizeForSearch, slugifyHeadword } from "@/lib/normalize";
+import { getRateLimitPolicy, type RateLimitKind } from "@/lib/rate-limit";
 import { canAdmin, canEditRecommendations, canModerate, requireActiveUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +24,54 @@ function text(formData: FormData, name: string) {
 function optionalText(formData: FormData, name: string) {
   const value = text(formData, name);
   return value.length > 0 ? value : undefined;
+}
+
+function safePath(value: string, fallback: string) {
+  const safeValue = value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") ? value : fallback;
+  try {
+    return encodeURI(decodeURI(safeValue));
+  } catch {
+    return encodeURI(safeValue);
+  }
+}
+
+function termPath(slug: string, suffix = "") {
+  return `/terms/${encodeURIComponent(slug)}${suffix}`;
+}
+
+function isRedirectSignal(error: unknown) {
+  if (!error || typeof error !== "object" || !("digest" in error)) return false;
+  return String(error.digest).startsWith("NEXT_REDIRECT");
+}
+
+function actionErrorMessage(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return error.issues[0]?.message || "入力内容を確認してください。";
+  }
+  if (error instanceof Error) {
+    if (error.message.includes("Unique constraint")) {
+      return "同じ内容がすでに登録されています。";
+    }
+    if (!error.message.includes("Prisma") && !error.message.includes("Invalid `")) {
+      return error.message;
+    }
+  }
+  return "処理に失敗しました。入力内容を確認し、もう一度お試しください。";
+}
+
+async function runStatefulAction(action: (formData: FormData) => Promise<void>, formData: FormData): Promise<ActionState> {
+  try {
+    await action(formData);
+    return { status: "success", message: "保存しました。" };
+  } catch (error) {
+    if (isRedirectSignal(error)) throw error;
+    const values: Record<string, string[]> = {};
+    for (const [key, value] of formData.entries()) {
+      if (typeof value !== "string" || /password|confirmation/i.test(key)) continue;
+      values[key] = [...(values[key] ?? []), value];
+    }
+    return { status: "error", message: actionErrorMessage(error), values };
+  }
 }
 
 async function uniqueSlug(headword: string) {
@@ -53,27 +104,22 @@ async function uniqueHandle(input: string) {
   return handle;
 }
 
-async function enforceRateLimit(userId: string, entity: "term" | "proposal" | "example" | "comment" | "report") {
-  const since = new Date(Date.now() - 60 * 1000);
-  const limits = {
-    term: 3,
-    proposal: 8,
-    example: 8,
-    comment: 12,
-    report: 8,
-  };
-  const count =
-    entity === "term"
-      ? await prisma.term.count({ where: { createdById: userId, createdAt: { gte: since } } })
-      : entity === "proposal"
-        ? await prisma.translationProposal.count({ where: { createdById: userId, createdAt: { gte: since } } })
-        : entity === "example"
-          ? await prisma.usageExample.count({ where: { createdById: userId, createdAt: { gte: since } } })
-          : entity === "comment"
-            ? await prisma.comment.count({ where: { userId, createdAt: { gte: since } } })
-            : await prisma.report.count({ where: { createdById: userId, createdAt: { gte: since } } });
+async function enforceRateLimit(userId: string, kind: RateLimitKind) {
+  const policy = getRateLimitPolicy();
+  const since = new Date(Date.now() - policy.windowSeconds * 1000);
+  const count = kind === "post"
+    ? (await Promise.all([
+        prisma.term.count({ where: { createdById: userId, createdAt: { gte: since } } }),
+        prisma.sense.count({ where: { createdById: userId, createdAt: { gte: since } } }),
+        prisma.translationProposal.count({ where: { createdById: userId, createdAt: { gte: since } } }),
+        prisma.usageExample.count({ where: { createdById: userId, createdAt: { gte: since } } }),
+        prisma.editSuggestion.count({ where: { createdById: userId, createdAt: { gte: since } } }),
+      ])).reduce((total, current) => total + current, 0)
+    : kind === "comment"
+      ? await prisma.comment.count({ where: { userId, createdAt: { gte: since } } })
+      : await prisma.report.count({ where: { createdById: userId, createdAt: { gte: since } } });
 
-  if (count >= limits[entity]) {
+  if (count >= policy.limits[kind]) {
     throw new Error("短時間の投稿が多すぎます。少し時間をおいてください。");
   }
 }
@@ -121,7 +167,7 @@ export async function signUp(formData: FormData) {
   const password = text(formData, "password");
   const displayName = text(formData, "displayName");
   const handleInput = text(formData, "handle") || displayName || email.split("@")[0];
-  const returnTo = text(formData, "returnTo") || "/";
+  const returnTo = safePath(text(formData, "returnTo"), "/");
   const parsed = authSchema.extend({ displayName: z.string().min(1) }).parse({
     email,
     password,
@@ -144,7 +190,7 @@ export async function signUp(formData: FormData) {
   });
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, createSessionToken(user.id), {
+  cookieStore.set(SESSION_COOKIE, createSessionToken(user.id, user.sessionVersion), {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
@@ -156,7 +202,7 @@ export async function signUp(formData: FormData) {
 export async function signIn(formData: FormData) {
   const email = text(formData, "email").toLowerCase();
   const password = text(formData, "password");
-  const returnTo = text(formData, "returnTo") || "/";
+  const returnTo = safePath(text(formData, "returnTo"), "/");
   const parsed = authSchema.parse({ email, password });
   const user = await prisma.user.findUnique({ where: { email: parsed.email } });
 
@@ -168,13 +214,13 @@ export async function signIn(formData: FormData) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, createSessionToken(user.id), {
+  cookieStore.set(SESSION_COOKIE, createSessionToken(user.id, user.sessionVersion), {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   });
-  redirect(returnTo);
+  redirect(user.mustChangePassword ? "/account?passwordReset=1" : returnTo);
 }
 
 export async function signOut() {
@@ -185,7 +231,7 @@ export async function signOut() {
 
 export async function createTerm(formData: FormData) {
   const user = await requireActiveUser();
-  await enforceRateLimit(user.id, "term");
+  await enforceRateLimit(user.id, "post");
   const parsed = termSchema.parse({
     headword: text(formData, "headword"),
     summary: text(formData, "summary"),
@@ -287,11 +333,12 @@ export async function createTerm(formData: FormData) {
   });
 
   revalidatePath("/");
-  redirect(`/terms/${term.slug}`);
+  redirect(termPath(term.slug));
 }
 
 export async function addSense(formData: FormData) {
   const user = await requireActiveUser();
+  await enforceRateLimit(user.id, "post");
   const termId = text(formData, "termId");
   const termSlug = text(formData, "termSlug");
   const title = text(formData, "title");
@@ -323,12 +370,12 @@ export async function addSense(formData: FormData) {
   });
 
   revalidatePath(`/terms/${termSlug}`);
-  redirect(`/terms/${termSlug}`);
+  redirect(termPath(termSlug));
 }
 
 export async function addProposal(formData: FormData) {
   const user = await requireActiveUser();
-  await enforceRateLimit(user.id, "proposal");
+  await enforceRateLimit(user.id, "post");
   const senseId = text(formData, "senseId");
   const termId = text(formData, "termId");
   const termSlug = text(formData, "termSlug");
@@ -387,12 +434,12 @@ export async function addProposal(formData: FormData) {
   });
 
   revalidatePath(`/terms/${termSlug}`);
-  redirect(`/terms/${termSlug}#proposal-${proposal.id}`);
+  redirect(termPath(termSlug, `#proposal-${proposal.id}`));
 }
 
 export async function addUsageExample(formData: FormData) {
   const user = await requireActiveUser();
-  await enforceRateLimit(user.id, "example");
+  await enforceRateLimit(user.id, "post");
   const termId = text(formData, "termId");
   const senseId = text(formData, "senseId");
   const proposalId = text(formData, "proposalId");
@@ -435,7 +482,7 @@ export async function addUsageExample(formData: FormData) {
   });
 
   revalidatePath(`/terms/${termSlug}`);
-  redirect(`/terms/${termSlug}#proposal-${proposalId}-${example.id}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}-${example.id}`));
 }
 
 export async function evaluateProposal(formData: FormData) {
@@ -466,7 +513,7 @@ export async function evaluateProposal(formData: FormData) {
   });
 
   revalidatePath(`/terms/${termSlug}`);
-  redirect(`/terms/${termSlug}#proposal-${proposalId}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}`));
 }
 
 export async function addComment(formData: FormData) {
@@ -490,7 +537,7 @@ export async function addComment(formData: FormData) {
   });
 
   revalidatePath(`/terms/${termSlug}`);
-  redirect(`/terms/${termSlug}#proposal-${proposalId}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}`));
 }
 
 export async function setRecommendation(formData: FormData) {
@@ -542,7 +589,7 @@ export async function setRecommendation(formData: FormData) {
 
   revalidatePath(`/terms/${termSlug}`);
   revalidatePath("/dashboard");
-  redirect(`/terms/${termSlug}#proposal-${proposalId}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}`));
 }
 
 export async function reportProposal(formData: FormData) {
@@ -565,7 +612,7 @@ export async function reportProposal(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect(`/terms/${termSlug}#proposal-${proposalId}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}`));
 }
 
 export async function reportTerm(formData: FormData) {
@@ -588,7 +635,7 @@ export async function reportTerm(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect(`/terms/${termSlug}`);
+  redirect(termPath(termSlug));
 }
 
 export async function reportUsageExample(formData: FormData) {
@@ -612,7 +659,7 @@ export async function reportUsageExample(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect(`/terms/${termSlug}#proposal-${proposalId}-${exampleId}`);
+  redirect(termPath(termSlug, `#proposal-${proposalId}-${exampleId}`));
 }
 
 export async function reportComment(formData: FormData) {
@@ -636,7 +683,7 @@ export async function reportComment(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect(`/terms/${termSlug}#comment-${commentId}`);
+  redirect(termPath(termSlug, `#comment-${commentId}`));
 }
 
 export async function hideProposal(formData: FormData) {
@@ -647,7 +694,7 @@ export async function hideProposal(formData: FormData) {
 
   const proposalId = text(formData, "proposalId");
   const reason = text(formData, "reason") || "モデレーション判断";
-  const returnTo = text(formData, "returnTo") || "/dashboard";
+  const returnTo = safePath(text(formData, "returnTo"), "/dashboard");
 
   const before = await prisma.translationProposal.findUnique({ where: { id: proposalId } });
   if (!before) throw new Error("訳語案が見つかりません。");
@@ -696,7 +743,7 @@ export async function suspendUser(formData: FormData) {
   }
 
   const userId = text(formData, "userId");
-  const returnTo = text(formData, "returnTo") || "/dashboard";
+  const returnTo = safePath(text(formData, "returnTo"), "/dashboard");
   if (userId === user.id) {
     throw new Error("自分自身は停止できません。");
   }
@@ -716,7 +763,7 @@ export async function unsuspendUser(formData: FormData) {
   }
 
   const userId = text(formData, "userId");
-  const returnTo = text(formData, "returnTo") || "/admin";
+  const returnTo = safePath(text(formData, "returnTo"), "/admin");
   await prisma.user.update({
     where: { id: userId },
     data: { suspendedAt: null },
@@ -733,7 +780,7 @@ export async function updateUserRole(formData: FormData) {
 
   const userId = text(formData, "userId");
   const role = roleSchema.parse(text(formData, "role"));
-  const returnTo = text(formData, "returnTo") || "/admin";
+  const returnTo = safePath(text(formData, "returnTo"), "/admin");
   if (userId === user.id) {
     throw new Error("自分自身のロールは変更できません。");
   }
@@ -745,4 +792,493 @@ export async function updateUserRole(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   redirect(returnTo);
+}
+
+const senseEditSchema = z.object({
+  title: z.string().trim().min(1, "意味の見出しを入力してください。").max(120),
+  description: z.string().trim().min(8, "意味の説明は8文字以上で入力してください。").max(2000),
+  usageNote: z.string().trim().max(1000).nullable(),
+  domainId: z.string().trim().max(100).nullable(),
+});
+
+const proposalEditSchema = z.object({
+  text: z.string().trim().min(1, "訳語案を入力してください。").max(120),
+  fitContext: z.string().trim().min(1, "合う文脈を入力してください。").max(1000),
+  unfitContext: z.string().trim().max(1000).nullable(),
+  rationale: z.string().trim().max(2000).nullable(),
+  pros: z.string().trim().max(1000).nullable(),
+  cons: z.string().trim().max(1000).nullable(),
+  register: z.enum(["casual", "neutral", "formal", "technical", "official"]),
+});
+
+const exampleEditSchema = z.object({
+  originalSentence: z.string().trim().min(3, "元文は3文字以上で入力してください。").max(3000),
+  rewrittenSentence: z.string().trim().min(3, "言い換えは3文字以上で入力してください。").max(3000),
+  contextNote: z.string().trim().max(1000).nullable(),
+});
+
+type EditableTargetType = "sense" | "proposal" | "example";
+type EditablePayload = Record<string, unknown>;
+
+function nullableFormText(formData: FormData, name: string) {
+  return optionalText(formData, name) ?? null;
+}
+
+function editPayloadFromForm(targetType: EditableTargetType, formData: FormData) {
+  if (targetType === "sense") {
+    return senseEditSchema.parse({
+      title: text(formData, "title"),
+      description: text(formData, "description"),
+      usageNote: nullableFormText(formData, "usageNote"),
+      domainId: nullableFormText(formData, "domainId"),
+    });
+  }
+  if (targetType === "proposal") {
+    return proposalEditSchema.parse({
+      text: text(formData, "proposalText"),
+      fitContext: text(formData, "fitContext"),
+      unfitContext: nullableFormText(formData, "unfitContext"),
+      rationale: nullableFormText(formData, "rationale"),
+      pros: nullableFormText(formData, "pros"),
+      cons: nullableFormText(formData, "cons"),
+      register: text(formData, "register") || "neutral",
+    });
+  }
+  return exampleEditSchema.parse({
+    originalSentence: text(formData, "originalSentence"),
+    rewrittenSentence: text(formData, "rewrittenSentence"),
+    contextNote: nullableFormText(formData, "contextNote"),
+  });
+}
+
+function parseStoredEditPayload(targetType: EditableTargetType, value: string) {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(value);
+  } catch {
+    throw new Error("修正提案の内容を読み取れませんでした。");
+  }
+  if (targetType === "sense") return senseEditSchema.parse(payload);
+  if (targetType === "proposal") return proposalEditSchema.parse(payload);
+  return exampleEditSchema.parse(payload);
+}
+
+function cleanObject<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined));
+}
+
+async function applyEditableChange(
+  tx: Prisma.TransactionClient,
+  targetType: EditableTargetType,
+  targetId: string,
+  rawPayload: EditablePayload,
+  createdById: string,
+  reason: string,
+  partial = false,
+) {
+  if (targetType === "sense") {
+    const before = await tx.sense.findUnique({ where: { id: targetId } });
+    if (!before) throw new Error("修正対象の意味が見つかりません。");
+    const payload = cleanObject(
+      partial ? senseEditSchema.partial().parse(rawPayload) : senseEditSchema.parse(rawPayload),
+    );
+    const after = await tx.sense.update({ where: { id: targetId }, data: payload });
+    await tx.revision.create({
+      data: {
+        entityType: targetType,
+        entityId: targetId,
+        beforeJson: JSON.stringify({
+          title: before.title,
+          description: before.description,
+          usageNote: before.usageNote,
+          domainId: before.domainId,
+        }),
+        afterJson: JSON.stringify({
+          title: after.title,
+          description: after.description,
+          usageNote: after.usageNote,
+          domainId: after.domainId,
+        }),
+        reason,
+        createdById,
+      },
+    });
+    return;
+  }
+
+  if (targetType === "proposal") {
+    const before = await tx.translationProposal.findUnique({ where: { id: targetId } });
+    if (!before) throw new Error("修正対象の訳語案が見つかりません。");
+    const parsed = partial ? proposalEditSchema.partial().parse(rawPayload) : proposalEditSchema.parse(rawPayload);
+    const status = partial && typeof rawPayload.status === "string"
+      ? z.enum(["draft", "active", "tentative", "recommended", "limited", "discouraged", "hidden"]).parse(rawPayload.status)
+      : undefined;
+    const payload = cleanObject({ ...parsed, status });
+    const after = await tx.translationProposal.update({ where: { id: targetId }, data: payload });
+    await tx.revision.create({
+      data: {
+        entityType: targetType,
+        entityId: targetId,
+        beforeJson: JSON.stringify({
+          text: before.text,
+          fitContext: before.fitContext,
+          unfitContext: before.unfitContext,
+          rationale: before.rationale,
+          pros: before.pros,
+          cons: before.cons,
+          register: before.register,
+          status: before.status,
+        }),
+        afterJson: JSON.stringify({
+          text: after.text,
+          fitContext: after.fitContext,
+          unfitContext: after.unfitContext,
+          rationale: after.rationale,
+          pros: after.pros,
+          cons: after.cons,
+          register: after.register,
+          status: after.status,
+        }),
+        reason,
+        createdById,
+      },
+    });
+    return;
+  }
+
+  const before = await tx.usageExample.findUnique({ where: { id: targetId } });
+  if (!before) throw new Error("修正対象の使用例が見つかりません。");
+  const payload = cleanObject(
+    partial ? exampleEditSchema.partial().parse(rawPayload) : exampleEditSchema.parse(rawPayload),
+  );
+  const after = await tx.usageExample.update({ where: { id: targetId }, data: payload });
+  await tx.revision.create({
+    data: {
+      entityType: targetType,
+      entityId: targetId,
+      beforeJson: JSON.stringify({
+        originalSentence: before.originalSentence,
+        rewrittenSentence: before.rewrittenSentence,
+        contextNote: before.contextNote,
+      }),
+      afterJson: JSON.stringify({
+        originalSentence: after.originalSentence,
+        rewrittenSentence: after.rewrittenSentence,
+        contextNote: after.contextNote,
+      }),
+      reason,
+      createdById,
+    },
+  });
+}
+
+export async function submitEditSuggestion(formData: FormData) {
+  const user = await requireActiveUser();
+  await enforceRateLimit(user.id, "post");
+  const targetType = z.enum(["sense", "proposal", "example"]).parse(text(formData, "targetType"));
+  const targetId = text(formData, "targetId");
+  const reason = text(formData, "reason");
+  const returnTo = safePath(text(formData, "returnTo"), "/");
+  if (!targetId) throw new Error("修正対象が見つかりません。");
+  if (reason.length < 5) throw new Error("修正理由を5文字以上で入力してください。");
+  const payload = editPayloadFromForm(targetType, formData);
+  const applyNow = text(formData, "applyNow") === "1" && canEditRecommendations(user.role);
+
+  if (applyNow) {
+    await prisma.$transaction((tx) =>
+      applyEditableChange(tx, targetType, targetId, payload, user.id, `編集者による直接編集: ${reason}`),
+    );
+  } else {
+    await prisma.editSuggestion.create({
+      data: {
+        targetType,
+        targetId,
+        proposedJson: JSON.stringify(payload),
+        reason,
+        createdById: user.id,
+      },
+    });
+  }
+
+  revalidatePath(returnTo.split(/[?#]/)[0] || "/");
+  revalidatePath("/dashboard");
+  redirect(returnTo);
+}
+
+export async function reviewEditSuggestion(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!canEditRecommendations(user.role)) {
+    throw new Error("修正提案を処理できる権限がありません。");
+  }
+  const suggestionId = text(formData, "suggestionId");
+  const decision = z.enum(["approved", "rejected"]).parse(text(formData, "decision"));
+  const reviewNote = text(formData, "reviewNote");
+  const returnTo = safePath(text(formData, "returnTo"), "/dashboard");
+  if (decision === "rejected" && reviewNote.length < 3) {
+    throw new Error("却下理由を3文字以上で入力してください。");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const suggestion = await tx.editSuggestion.findUnique({ where: { id: suggestionId } });
+    if (!suggestion || suggestion.status !== "pending") {
+      throw new Error("未処理の修正提案が見つかりません。");
+    }
+    const targetType = z.enum(["sense", "proposal", "example"]).parse(suggestion.targetType);
+    if (decision === "approved") {
+      const payload = parseStoredEditPayload(targetType, suggestion.proposedJson);
+      await applyEditableChange(
+        tx,
+        targetType,
+        suggestion.targetId,
+        payload,
+        user.id,
+        `修正提案を承認: ${suggestion.reason}${reviewNote ? `（${reviewNote}）` : ""}`,
+      );
+    }
+    await tx.editSuggestion.update({
+      where: { id: suggestion.id },
+      data: {
+        status: decision,
+        reviewedById: user.id,
+        reviewNote: reviewNote || null,
+        reviewedAt: new Date(),
+      },
+    });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(returnTo.split(/[?#]/)[0] || "/");
+  redirect(returnTo);
+}
+
+export async function revertRevision(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!canEditRecommendations(user.role)) {
+    throw new Error("変更を差し戻す権限がありません。");
+  }
+  const revisionId = text(formData, "revisionId");
+  const reason = text(formData, "reason");
+  const returnTo = safePath(text(formData, "returnTo"), "/dashboard");
+  if (reason.length < 5) throw new Error("差し戻し理由を5文字以上で入力してください。");
+
+  await prisma.$transaction(async (tx) => {
+    const revision = await tx.revision.findUnique({ where: { id: revisionId } });
+    if (!revision?.beforeJson) throw new Error("この変更には差し戻せる変更前データがありません。");
+    const targetType = z.enum(["sense", "proposal", "example"]).safeParse(revision.entityType);
+    if (!targetType.success) throw new Error("この種類の変更は画面から差し戻せません。");
+    let before: unknown;
+    try {
+      before = JSON.parse(revision.beforeJson);
+    } catch {
+      throw new Error("変更前データを読み取れませんでした。");
+    }
+    if (!before || typeof before !== "object" || Array.isArray(before)) {
+      throw new Error("変更前データの形式が正しくありません。");
+    }
+    await applyEditableChange(
+      tx,
+      targetType.data,
+      revision.entityId,
+      before as EditablePayload,
+      user.id,
+      `変更を差し戻し: ${reason}`,
+      true,
+    );
+  });
+
+  revalidatePath(returnTo.split(/[?#]/)[0] || "/");
+  revalidatePath("/dashboard");
+  redirect(returnTo);
+}
+
+export async function updateProfile(formData: FormData) {
+  const user = await requireActiveUser();
+  const displayName = z.string().trim().min(1, "表示名を入力してください。").max(80).parse(text(formData, "displayName"));
+  const handle = z
+    .string()
+    .trim()
+    .min(2, "ハンドルは2文字以上で入力してください。")
+    .max(30)
+    .regex(/^[\p{Letter}\p{Number}_-]+$/u, "ハンドルには文字、数字、_、-だけを使用できます。")
+    .parse(text(formData, "handle"));
+  const duplicate = await prisma.user.findFirst({ where: { handle, id: { not: user.id } } });
+  if (duplicate) throw new Error("このハンドルはすでに使われています。");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: user.id }, data: { displayName, handle } });
+    await tx.revision.create({
+      data: {
+        entityType: "user",
+        entityId: user.id,
+        beforeJson: JSON.stringify({ displayName: user.displayName, handle: user.handle }),
+        afterJson: JSON.stringify({ displayName, handle }),
+        reason: "プロフィールを変更",
+        createdById: user.id,
+      },
+    });
+  });
+  revalidatePath("/account");
+  redirect("/account?updated=1");
+}
+
+export async function changePassword(formData: FormData) {
+  const user = await requireActiveUser({ allowPasswordChange: true });
+  const currentPassword = text(formData, "currentPassword");
+  const newPassword = text(formData, "newPassword");
+  const confirmation = text(formData, "confirmation");
+  if (!verifyPassword(currentPassword, user.passwordHash)) {
+    throw new Error("現在のパスワードが正しくありません。");
+  }
+  if (newPassword.length < 12) throw new Error("新しいパスワードは12文字以上にしてください。");
+  if (newPassword !== confirmation) throw new Error("新しいパスワードが確認入力と一致しません。");
+  if (verifyPassword(newPassword, user.passwordHash)) throw new Error("現在とは異なるパスワードを指定してください。");
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash: hashPassword(newPassword),
+      mustChangePassword: false,
+      sessionVersion: { increment: 1 },
+    },
+  });
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, createSessionToken(updatedUser.id, updatedUser.sessionVersion), {
+    httpOnly: true,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  revalidatePath("/account");
+  redirect("/account?passwordChanged=1");
+}
+
+export async function resetUserPassword(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!canAdmin(user.role)) throw new Error("パスワードを再設定する権限がありません。");
+  const userId = text(formData, "userId");
+  const temporaryPassword = text(formData, "temporaryPassword");
+  const returnTo = safePath(text(formData, "returnTo"), "/admin");
+  if (userId === user.id) throw new Error("自分のパスワードはアカウント画面から変更してください。");
+  if (temporaryPassword.length < 12) throw new Error("一時パスワードは12文字以上にしてください。");
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) throw new Error("ユーザーが見つかりません。");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: hashPassword(temporaryPassword),
+        mustChangePassword: true,
+        sessionVersion: { increment: 1 },
+      },
+    });
+    await tx.revision.create({
+      data: {
+        entityType: "user",
+        entityId: userId,
+        beforeJson: JSON.stringify({ passwordResetRequired: target.mustChangePassword }),
+        afterJson: JSON.stringify({ passwordResetRequired: true }),
+        reason: "管理者が一時パスワードを発行",
+        createdById: user.id,
+      },
+    });
+  });
+  revalidatePath("/admin");
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}reset=1`);
+}
+
+export async function signUpWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(signUp, formData);
+}
+
+export async function signInWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(signIn, formData);
+}
+
+export async function createTermWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(createTerm, formData);
+}
+
+export async function addSenseWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(addSense, formData);
+}
+
+export async function addProposalWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(addProposal, formData);
+}
+
+export async function addUsageExampleWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(addUsageExample, formData);
+}
+
+export async function evaluateProposalWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(evaluateProposal, formData);
+}
+
+export async function addCommentWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(addComment, formData);
+}
+
+export async function setRecommendationWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(setRecommendation, formData);
+}
+
+export async function reportProposalWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(reportProposal, formData);
+}
+
+export async function reportTermWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(reportTerm, formData);
+}
+
+export async function reportUsageExampleWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(reportUsageExample, formData);
+}
+
+export async function reportCommentWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(reportComment, formData);
+}
+
+export async function hideProposalWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(hideProposal, formData);
+}
+
+export async function resolveReportWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(resolveReport, formData);
+}
+
+export async function suspendUserWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(suspendUser, formData);
+}
+
+export async function unsuspendUserWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(unsuspendUser, formData);
+}
+
+export async function updateUserRoleWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(updateUserRole, formData);
+}
+
+export async function submitEditSuggestionWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(submitEditSuggestion, formData);
+}
+
+export async function reviewEditSuggestionWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(reviewEditSuggestion, formData);
+}
+
+export async function revertRevisionWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(revertRevision, formData);
+}
+
+export async function updateProfileWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(updateProfile, formData);
+}
+
+export async function changePasswordWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(changePassword, formData);
+}
+
+export async function resetUserPasswordWithState(_previousState: ActionState, formData: FormData) {
+  return runStatefulAction(resetUserPassword, formData);
 }

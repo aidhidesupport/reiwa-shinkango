@@ -597,26 +597,33 @@ function supplementalToSeedTerm(term: SupplementalTerm, index: number): SeedTerm
 }
 
 async function main() {
-  await prisma.report.deleteMany();
-  await prisma.revision.deleteMany();
-  await prisma.recommendation.deleteMany();
-  await prisma.comment.deleteMany();
-  await prisma.evaluation.deleteMany();
-  await prisma.usageExample.deleteMany();
-  await prisma.translationProposal.deleteMany();
-  await prisma.sense.deleteMany();
-  await prisma.termTag.deleteMany();
-  await prisma.term.deleteMany();
-  await prisma.tag.deleteMany();
-  await prisma.domain.deleteMany();
-  await prisma.user.deleteMany();
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  const isPostgres = databaseUrl.startsWith("postgresql://") || databaseUrl.startsWith("postgres://");
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "change-me-admin-password";
+  const reservedEmailDomainPattern = /@(example\.(com|net|org)|.+\.(test|invalid|example|localhost|local))$/i;
+
+  if (isPostgres) {
+    if (!process.env.ADMIN_EMAIL || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail) || reservedEmailDomainPattern.test(adminEmail)) {
+      throw new Error("PostgreSQLへのseedには本番用のADMIN_EMAILが必要です。");
+    }
+    if (!process.env.ADMIN_PASSWORD || adminPassword.length < 16 || adminPassword === "change-me-admin-password") {
+      throw new Error("PostgreSQLへのseedには16文字以上の強いADMIN_PASSWORDが必要です。");
+    }
+  }
+
+  const [existingUsers, existingTerms] = await Promise.all([prisma.user.count(), prisma.term.count()]);
+  if (existingUsers > 0 || existingTerms > 0) {
+    console.log(`Seed skipped: database is not empty (users=${existingUsers}, terms=${existingTerms}).`);
+    return;
+  }
 
   const admin = await prisma.user.create({
     data: {
       displayName: "管理者",
       handle: "admin",
-      email: process.env.ADMIN_EMAIL ?? "admin@example.com",
-      passwordHash: hashPassword(process.env.ADMIN_PASSWORD ?? "change-me-admin-password"),
+      email: adminEmail,
+      passwordHash: hashPassword(adminPassword),
       role: "admin",
       reputation: 120,
     },
@@ -625,8 +632,8 @@ async function main() {
     data: {
       displayName: "編集者",
       handle: "editor",
-      email: "editor@example.com",
-      passwordHash: hashPassword("change-me-editor-password"),
+      email: isPostgres ? null : "editor@example.com",
+      passwordHash: isPostgres ? null : hashPassword("change-me-editor-password"),
       role: "editor",
       reputation: 90,
     },
@@ -635,8 +642,8 @@ async function main() {
     data: {
       displayName: "提案者",
       handle: "writer",
-      email: "writer@example.com",
-      passwordHash: hashPassword("change-me-writer-password"),
+      email: isPostgres ? null : "writer@example.com",
+      passwordHash: isPostgres ? null : hashPassword("change-me-writer-password"),
       role: "user",
       reputation: 24,
     },
@@ -645,8 +652,8 @@ async function main() {
     data: {
       displayName: "読者",
       handle: "reader",
-      email: "reader@example.com",
-      passwordHash: hashPassword("change-me-reader-password"),
+      email: isPostgres ? null : "reader@example.com",
+      passwordHash: isPostgres ? null : hashPassword("change-me-reader-password"),
       role: "user",
       reputation: 3,
     },

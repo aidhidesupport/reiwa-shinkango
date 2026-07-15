@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+node scripts/check-production-env.mjs
 node scripts/write-postgres-schema.mjs
 if [[ -z "${DATABASE_URL:-}" ]]; then
   echo "DATABASE_URL is required. Use the Supabase runtime connection string." >&2

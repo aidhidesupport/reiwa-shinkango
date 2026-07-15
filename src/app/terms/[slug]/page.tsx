@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, Clock3, History, Plus, Tag } from "lucide-react";
-import { reportTerm } from "@/app/actions";
-import { AddProposalForm, AddSenseForm } from "@/components/TermForms";
+import { reportTermWithState } from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
+import { AddProposalForm, AddSenseForm, EditSenseForm } from "@/components/TermForms";
 import { ProposalCard } from "@/components/ProposalCard";
-import { canModerate, getCurrentUser } from "@/lib/session";
+import { canEditRecommendations, canModerate, getCurrentUser } from "@/lib/session";
 import { sortedByProposalScore } from "@/lib/scoring";
 import { prisma } from "@/lib/prisma";
+import { decodePathSegment } from "@/lib/routing";
 
 type TermPageProps = {
   params: Promise<{ slug: string }>;
@@ -15,7 +17,8 @@ type TermPageProps = {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: TermPageProps) {
-  const { slug } = await params;
+  const rawParams = await params;
+  const slug = decodePathSegment(rawParams.slug);
   const term = await prisma.term.findUnique({ where: { slug } });
   return {
     title: term ? `${term.headword}の日本語訳・言い換え` : "項目",
@@ -24,7 +27,8 @@ export async function generateMetadata({ params }: TermPageProps) {
 }
 
 export default async function TermPage({ params }: TermPageProps) {
-  const { slug } = await params;
+  const rawParams = await params;
+  const slug = decodePathSegment(rawParams.slug);
   const [term, domains, currentUser] = await Promise.all([
     prisma.term.findUnique({
       where: { slug },
@@ -99,7 +103,7 @@ export default async function TermPage({ params }: TermPageProps) {
                 <AlertTriangle size={15} />
                 通報
               </summary>
-              <form action={reportTerm} className="inline-form">
+              <ActionForm action={reportTermWithState} className="inline-form" pendingMessage="通報しています…">
                 <input type="hidden" name="termId" value={term.id} />
                 <input type="hidden" name="termSlug" value={term.slug} />
                 <select name="reason" defaultValue="meaning_error" aria-label="通報理由">
@@ -111,7 +115,7 @@ export default async function TermPage({ params }: TermPageProps) {
                 </select>
                 <input name="detail" placeholder="補足" />
                 <button type="submit">送信</button>
-              </form>
+              </ActionForm>
             </details>
           ) : null}
         </div>
@@ -146,7 +150,7 @@ export default async function TermPage({ params }: TermPageProps) {
               canSeeHidden ? sense.proposals : sense.proposals.filter((proposal) => proposal.status !== "hidden"),
             );
             return (
-              <section key={sense.id} className="sense-section">
+              <section key={sense.id} id={`sense-${sense.id}`} className="sense-section">
                 <div className="section-heading">
                   <div>
                     <p className="eyebrow">{sense.domain?.name ?? "未分類"}</p>
@@ -154,6 +158,16 @@ export default async function TermPage({ params }: TermPageProps) {
                   </div>
                 </div>
                 <p>{sense.description}</p>
+                {sense.usageNote ? <p className="muted">用法メモ: {sense.usageNote}</p> : null}
+
+                {currentUser ? (
+                  <EditSenseForm
+                    sense={sense}
+                    termSlug={term.slug}
+                    domains={domains}
+                    canApplyNow={canEditRecommendations(currentUser.role)}
+                  />
+                ) : null}
 
                 <div className="proposal-list">
                   {proposals.map((proposal) => (

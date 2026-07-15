@@ -10,8 +10,9 @@ describe("auth helpers", () => {
   });
 
   it("creates signed session tokens", () => {
-    const token = createSessionToken("user_123");
+    const token = createSessionToken("user_123", 3);
     expect(verifySessionToken(token)?.userId).toBe("user_123");
+    expect(verifySessionToken(token)?.sessionVersion).toBe(3);
     expect(verifySessionToken(`${token}x`)).toBeNull();
   });
 

@@ -1,5 +1,6 @@
 PRAGMA foreign_keys = OFF;
 
+DROP TABLE IF EXISTS "EditSuggestion";
 DROP TABLE IF EXISTS "Report";
 DROP TABLE IF EXISTS "Revision";
 DROP TABLE IF EXISTS "Recommendation";
@@ -22,6 +23,8 @@ CREATE TABLE "User" (
   "handle" TEXT NOT NULL,
   "email" TEXT,
   "passwordHash" TEXT,
+  "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
+  "sessionVersion" INTEGER NOT NULL DEFAULT 0,
   "role" TEXT NOT NULL DEFAULT 'user',
   "reputation" INTEGER NOT NULL DEFAULT 0,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -196,3 +199,22 @@ CREATE TABLE "Report" (
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "Report_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
+
+CREATE TABLE "EditSuggestion" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "targetType" TEXT NOT NULL,
+  "targetId" TEXT NOT NULL,
+  "proposedJson" TEXT NOT NULL,
+  "reason" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'pending',
+  "createdById" TEXT NOT NULL,
+  "reviewedById" TEXT,
+  "reviewNote" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "reviewedAt" DATETIME,
+  CONSTRAINT "EditSuggestion_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "EditSuggestion_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE INDEX "EditSuggestion_status_createdAt_idx" ON "EditSuggestion"("status", "createdAt");
+CREATE INDEX "EditSuggestion_targetType_targetId_idx" ON "EditSuggestion"("targetType", "targetId");

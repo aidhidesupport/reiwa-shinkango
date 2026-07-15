@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Clock3, EyeOff, Gauge, GitMerge, MessageSquare, ShieldCheck } from "lucide-react";
-import { hideProposal, resolveReport, setRecommendation } from "@/app/actions";
+import {
+  hideProposalWithState,
+  resolveReportWithState,
+  reviewEditSuggestionWithState,
+  setRecommendationWithState,
+} from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
 import { EmptyState } from "@/components/EmptyState";
 import { RECOMMENDATION_LEVELS } from "@/lib/labels";
 import { getCurrentUser, canEditRecommendations } from "@/lib/session";
@@ -15,6 +21,36 @@ export const dynamic = "force-dynamic";
 
 const positiveLabels = ["natural", "clear", "concise", "accurate", "document_friendly", "conversation_friendly"];
 const negativeLabels = ["too_stiff", "too_long", "meaning_shift", "old_fashioned", "too_coined"];
+
+const suggestionFieldLabels: Record<string, string> = {
+  title: "見出し",
+  description: "説明",
+  usageNote: "用法メモ",
+  domainId: "分野ID",
+  text: "訳語案",
+  fitContext: "合う文脈",
+  unfitContext: "避けたい文脈",
+  rationale: "理由",
+  pros: "良い点",
+  cons: "弱い点",
+  register: "文体",
+  originalSentence: "元文",
+  rewrittenSentence: "言い換え",
+  contextNote: "文脈メモ",
+};
+
+function suggestionFields(value: string) {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return Object.entries(parsed).map(([key, fieldValue]) => ({
+      key,
+      label: suggestionFieldLabels[key] ?? key,
+      value: fieldValue === null || fieldValue === "" ? "なし" : String(fieldValue),
+    }));
+  } catch {
+    return [{ key: "value", label: "修正内容", value }];
+  }
+}
 
 export default async function DashboardPage() {
   const currentUser = await getCurrentUser();
@@ -32,7 +68,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [openReports, candidateProposals, reviewProposals, staleTerms, discussionProposals, duplicateTermSource, drafts, stats] = await Promise.all([
+  const [openReports, candidateProposals, reviewProposals, staleTerms, discussionProposals, duplicateTermSource, drafts, stats, pendingSuggestions] = await Promise.all([
     prisma.report.findMany({
       where: { status: "open" },
       take: 8,
@@ -124,7 +160,14 @@ export default async function DashboardPage() {
       prisma.translationProposal.count(),
       prisma.recommendation.count(),
       prisma.report.count({ where: { status: "open" } }),
+      prisma.editSuggestion.count({ where: { status: "pending" } }),
     ]),
+    prisma.editSuggestion.findMany({
+      where: { status: "pending" },
+      take: 20,
+      orderBy: { createdAt: "asc" },
+      include: { createdBy: true },
+    }),
   ]);
 
   const reportProposalIds = openReports
@@ -177,6 +220,36 @@ export default async function DashboardPage() {
       },
     }),
   ]);
+  const suggestionSenseIds = pendingSuggestions.filter((item) => item.targetType === "sense").map((item) => item.targetId);
+  const suggestionProposalIds = pendingSuggestions.filter((item) => item.targetType === "proposal").map((item) => item.targetId);
+  const suggestionExampleIds = pendingSuggestions.filter((item) => item.targetType === "example").map((item) => item.targetId);
+  const [suggestionSenses, suggestionProposals, suggestionExamples] = await Promise.all([
+    prisma.sense.findMany({ where: { id: { in: suggestionSenseIds } }, include: { term: true } }),
+    prisma.translationProposal.findMany({
+      where: { id: { in: suggestionProposalIds } },
+      include: { sense: { include: { term: true } } },
+    }),
+    prisma.usageExample.findMany({ where: { id: { in: suggestionExampleIds } }, include: { term: true } }),
+  ]);
+  const suggestionTargetLinks = new Map<string, { href: string; label: string }>();
+  for (const sense of suggestionSenses) {
+    suggestionTargetLinks.set(`sense:${sense.id}`, {
+      href: `/terms/${sense.term.slug}#sense-${sense.id}`,
+      label: `${sense.term.headword} / ${sense.title}`,
+    });
+  }
+  for (const proposal of suggestionProposals) {
+    suggestionTargetLinks.set(`proposal:${proposal.id}`, {
+      href: `/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`,
+      label: `${proposal.sense.term.headword} / ${proposal.text}`,
+    });
+  }
+  for (const example of suggestionExamples) {
+    suggestionTargetLinks.set(`example:${example.id}`, {
+      href: `/terms/${example.term.slug}#proposal-${example.proposalId}-${example.id}`,
+      label: `${example.term.headword} / ${example.rewrittenSentence}`,
+    });
+  }
   const reportTargetLinks = new Map<string, { href: string; label: string }>();
   for (const proposal of reportProposalTargets) {
     reportTargetLinks.set(`proposal:${proposal.id}`, {
@@ -206,7 +279,7 @@ export default async function DashboardPage() {
     });
   }
 
-  const [termCount, proposalCount, recommendationCount, reportCount] = stats;
+  const [termCount, proposalCount, recommendationCount, reportCount, pendingSuggestionCount] = stats;
   const canEdit = currentUser ? canEditRecommendations(currentUser.role) : false;
   const recommendedCandidates = [...candidateProposals]
     .sort((a, b) => scoreProposal(b) - scoreProposal(a))
@@ -258,6 +331,57 @@ export default async function DashboardPage() {
           <strong>{reportCount}</strong>
           <span>未処理通報</span>
         </div>
+        <div>
+          <strong>{pendingSuggestionCount}</strong>
+          <span>修正提案</span>
+        </div>
+      </section>
+
+      <section className="content-column suggestion-queue" id="suggestions">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">編集</p>
+            <h2>修正提案</h2>
+          </div>
+          <ShieldCheck size={20} />
+        </div>
+        {pendingSuggestions.length === 0 ? <p className="muted">未処理の修正提案はありません。</p> : null}
+        <div className="suggestion-list">
+          {pendingSuggestions.map((suggestion) => {
+            const target = suggestionTargetLinks.get(`${suggestion.targetType}:${suggestion.targetId}`);
+            return (
+              <article key={suggestion.id} className="suggestion-item">
+                <div>
+                  <p className="eyebrow">{suggestion.targetType} / {suggestion.createdBy.displayName}</p>
+                  <h3>{target?.label ?? "対象が見つかりません"}</h3>
+                  <p><strong>提案理由:</strong> {suggestion.reason}</p>
+                  {target ? <Link href={target.href} className="text-link">現在の表示を確認</Link> : null}
+                </div>
+                <dl className="suggestion-fields">
+                  {suggestionFields(suggestion.proposedJson).map((field) => (
+                    <div key={field.key}>
+                      <dt>{field.label}</dt>
+                      <dd>{field.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <ActionForm action={reviewEditSuggestionWithState} className="suggestion-review" pendingMessage="提案を処理しています…">
+                  <input type="hidden" name="suggestionId" value={suggestion.id} />
+                  <input type="hidden" name="returnTo" value="/dashboard#suggestions" />
+                  <select name="decision" defaultValue="approved" aria-label="処理結果">
+                    <option value="approved">承認して反映</option>
+                    <option value="rejected">却下</option>
+                  </select>
+                  <input name="reviewNote" placeholder="判断理由（却下時は必須）" />
+                  <button type="submit">処理する</button>
+                </ActionForm>
+              </article>
+            );
+          })}
+        </div>
+        {pendingSuggestionCount > pendingSuggestions.length ? (
+          <p className="muted">古い順に{pendingSuggestions.length}件を表示しています。残り{pendingSuggestionCount - pendingSuggestions.length}件です。</p>
+        ) : null}
       </section>
 
       <section className="content-grid">
@@ -285,7 +409,7 @@ export default async function DashboardPage() {
                   <span>確認</span>
                 </Link>
                 {canEdit ? (
-                  <form action={setRecommendation} className="compact-recommend-form">
+                  <ActionForm action={setRecommendationWithState} className="compact-recommend-form" pendingMessage="推奨訳を保存しています…">
                     <input type="hidden" name="senseId" value={proposal.senseId} />
                     <input type="hidden" name="proposalId" value={proposal.id} />
                     <input type="hidden" name="termSlug" value={proposal.sense.term.slug} />
@@ -299,7 +423,7 @@ export default async function DashboardPage() {
                     <button type="submit">
                       <ShieldCheck size={16} />
                     </button>
-                  </form>
+                  </ActionForm>
                 ) : null}
               </article>
             ))}
@@ -330,7 +454,7 @@ export default async function DashboardPage() {
                   {report.detail ? <p>{report.detail}</p> : null}
                   <div className="moderation-actions">
                     {report.targetType === "proposal" ? (
-                      <form action={hideProposal}>
+                      <ActionForm action={hideProposalWithState} pendingMessage="非表示にしています…">
                         <input type="hidden" name="proposalId" value={report.targetId} />
                         <input type="hidden" name="reason" value={`通報対応: ${report.reason}`} />
                         <input type="hidden" name="returnTo" value="/dashboard" />
@@ -338,18 +462,18 @@ export default async function DashboardPage() {
                           <EyeOff size={15} />
                           非表示
                         </button>
-                      </form>
+                      </ActionForm>
                     ) : null}
-                    <form action={resolveReport}>
+                    <ActionForm action={resolveReportWithState} pendingMessage="通報を処理しています…">
                       <input type="hidden" name="reportId" value={report.id} />
                       <input type="hidden" name="status" value="resolved" />
                       <button type="submit">処理済み</button>
-                    </form>
-                    <form action={resolveReport}>
+                    </ActionForm>
+                    <ActionForm action={resolveReportWithState} pendingMessage="通報を処理しています…">
                       <input type="hidden" name="reportId" value={report.id} />
                       <input type="hidden" name="status" value="dismissed" />
                       <button type="submit">却下</button>
-                    </form>
+                    </ActionForm>
                   </div>
                 </div>
               );

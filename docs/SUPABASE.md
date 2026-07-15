@@ -49,9 +49,18 @@ SESSION_SECRET="openssl rand -base64 48 などで作った長いランダム文�
 NEXT_PUBLIC_SITE_URL="https://your-domain.example"
 ADMIN_EMAIL="owner@example.com"
 ADMIN_PASSWORD="初回投入用の強いパスワード"
+CONTACT_EMAIL="aidhide.support@gmail.com"
+OPERATOR_NAME="令和新漢語運営事務局"
+DATA_LICENSE="site-only"
+RATE_LIMIT_WINDOW_SECONDS="60"
+RATE_LIMIT_POSTS_PER_WINDOW="12"
+RATE_LIMIT_COMMENTS_PER_WINDOW="12"
+RATE_LIMIT_REPORTS_PER_WINDOW="8"
 ```
 
 `ADMIN_PASSWORD` は初期投入用です。公開前から強い値にして、漏れないように管理します。
+`DATA_LICENSE` は `site-only`、`CC-BY-4.0`、`CC-BY-SA-4.0` のいずれかを明示します。初回公開は `site-only` とします。設定後は `npm run check:production-env` を実行します。
+運営責任者の氏名と連絡可能な住所はSupabaseやリポジトリの公開設定へ保存せず、本人から問い合わせ先へ請求があった場合に遅滞なく回答できるよう、安全な場所で管理します。
 
 ## 5. マイグレーションと初期データ
 
@@ -71,9 +80,10 @@ npm run prisma:generate
 ## 6. Vercel に置く場合
 
 - Framework Preset: Next.js
-- Build Command: `npm run build:postgres`
+- Build Command: `npm run build:postgres`（環境変数検査を含む）
 - Install Command: `npm ci`
-- Environment Variables: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- Environment Variables: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CONTACT_EMAIL`, `OPERATOR_NAME`, `DATA_LICENSE`, `RATE_LIMIT_WINDOW_SECONDS`, `RATE_LIMIT_POSTS_PER_WINDOW`, `RATE_LIMIT_COMMENTS_PER_WINDOW`, `RATE_LIMIT_REPORTS_PER_WINDOW`
+- Function Region: `hnd1`（`vercel.json` で設定済み）
 
 本番反映前に、手元またはCIで以下を実行します。
 
@@ -82,7 +92,7 @@ npm run prisma:migrate:postgres
 npm run seed
 ```
 
-`seed` は冪等にしてあります。既存データを消さず、足りない初期データを補います。
+`seed` は空のDBにだけ初期データを投入します。利用者または項目が存在する場合は、既存データを削除せず処理をスキップします。本番PostgreSQLでは、既知のデモ用パスワードを持つアカウントは作成しません。
 
 ## 7. 動作確認
 
@@ -101,6 +111,7 @@ npm run backup:postgres
 ```
 
 生成されたSQLは `backups/` に置かれます。本番ではこの出力先を別ストレージへ退避してください。
+`pg_dump` は接続先PostgreSQLと同じメジャーバージョン、またはそれより新しいクライアントを使用してください。
 
 ## 参考
 

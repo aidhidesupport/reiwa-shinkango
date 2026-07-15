@@ -1,5 +1,11 @@
 import { Plus, Send } from "lucide-react";
-import { addProposal, addSense, createTerm } from "@/app/actions";
+import {
+  addProposalWithState,
+  addSenseWithState,
+  createTermWithState,
+  submitEditSuggestionWithState,
+} from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
 import { REGISTERS } from "@/lib/labels";
 
 type Domain = {
@@ -9,7 +15,7 @@ type Domain = {
 
 export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain[]; defaultHeadword?: string }) {
   return (
-    <form action={createTerm} className="stacked-form">
+    <ActionForm action={createTermWithState} className="stacked-form" pendingMessage="項目を作成しています…">
       <div className="form-grid">
         <label>
           横文字
@@ -86,7 +92,7 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
         <Plus size={17} />
         <span>項目を作成</span>
       </button>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -94,7 +100,7 @@ export function AddSenseForm({ termId, termSlug, domains }: { termId: string; te
   return (
     <details className="section-details">
       <summary>意味を追加</summary>
-      <form action={addSense} className="stacked-form compact-form">
+      <ActionForm action={addSenseWithState} className="stacked-form compact-form" pendingMessage="意味を追加しています…">
         <input type="hidden" name="termId" value={termId} />
         <input type="hidden" name="termSlug" value={termSlug} />
         <label>
@@ -118,7 +124,7 @@ export function AddSenseForm({ termId, termSlug, domains }: { termId: string; te
           <Plus size={17} />
           <span>追加</span>
         </button>
-      </form>
+      </ActionForm>
     </details>
   );
 }
@@ -135,7 +141,7 @@ export function AddProposalForm({
   return (
     <details className="section-details">
       <summary>訳語案を追加</summary>
-      <form action={addProposal} className="stacked-form compact-form">
+      <ActionForm action={addProposalWithState} className="stacked-form compact-form" pendingMessage="訳語案を投稿しています…">
         <input type="hidden" name="termId" value={termId} />
         <input type="hidden" name="termSlug" value={termSlug} />
         <input type="hidden" name="senseId" value={senseId} />
@@ -189,7 +195,75 @@ export function AddProposalForm({
           <Send size={17} />
           <span>投稿</span>
         </button>
-      </form>
+      </ActionForm>
+    </details>
+  );
+}
+
+export function EditSenseForm({
+  sense,
+  termSlug,
+  domains,
+  canApplyNow,
+}: {
+  sense: {
+    id: string;
+    title: string;
+    description: string;
+    usageNote: string | null;
+    domainId: string | null;
+  };
+  termSlug: string;
+  domains: Domain[];
+  canApplyNow: boolean;
+}) {
+  return (
+    <details className="editor-details edit-details">
+      <summary>{canApplyNow ? "意味を編集・修正提案" : "意味の修正を提案"}</summary>
+      <ActionForm
+        action={submitEditSuggestionWithState}
+        className="stacked-form compact-form"
+        pendingMessage="修正内容を送信しています…"
+      >
+        <input type="hidden" name="targetType" value="sense" />
+        <input type="hidden" name="targetId" value={sense.id} />
+        <input type="hidden" name="returnTo" value={`/terms/${termSlug}#sense-${sense.id}`} />
+        <label>
+          見出し
+          <input name="title" required defaultValue={sense.title} />
+        </label>
+        <label>
+          説明
+          <textarea name="description" required minLength={8} rows={3} defaultValue={sense.description} />
+        </label>
+        <label>
+          用法メモ
+          <textarea name="usageNote" rows={2} defaultValue={sense.usageNote ?? ""} />
+        </label>
+        <label>
+          分野
+          <select name="domainId" defaultValue={sense.domainId ?? ""}>
+            <option value="">未分類</option>
+            {domains.map((domain) => (
+              <option key={domain.id} value={domain.id}>{domain.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          修正理由
+          <textarea name="reason" required minLength={5} rows={2} placeholder="どこを、なぜ直すか" />
+        </label>
+        {canApplyNow ? (
+          <label className="check-line">
+            <input type="checkbox" name="applyNow" value="1" />
+            編集者権限で直ちに反映する
+          </label>
+        ) : null}
+        <button type="submit" className="button secondary">
+          <Send size={17} />
+          <span>{canApplyNow ? "編集または提案を送信" : "修正を提案"}</span>
+        </button>
+      </ActionForm>
     </details>
   );
 }

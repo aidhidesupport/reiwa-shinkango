@@ -10,5 +10,14 @@ fi
 
 mkdir -p backups
 timestamp="$(date +%Y%m%d-%H%M%S)"
-pg_dump "$backup_url" > "backups/reiwa-shinkango-${timestamp}.sql"
-echo "backups/reiwa-shinkango-${timestamp}.sql"
+output="backups/reiwa-shinkango-${timestamp}.sql"
+temporary="${output}.tmp"
+trap 'rm -f "$temporary"' EXIT
+pg_dump --file="$temporary" "$backup_url"
+if [[ ! -s "$temporary" ]]; then
+  echo "pg_dump completed without producing a backup." >&2
+  exit 1
+fi
+mv "$temporary" "$output"
+trap - EXIT
+echo "$output"

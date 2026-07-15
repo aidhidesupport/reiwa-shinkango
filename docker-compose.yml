@@ -1,3 +1,5 @@
+name: reiwa-shinkango
+
 services:
   db:
     image: postgres:16
@@ -18,10 +20,18 @@ services:
     environment:
       DATABASE_URL: postgresql://reiwa:reiwa_password_change_me@db:5432/reiwa_shinkango
       DIRECT_URL: postgresql://reiwa:reiwa_password_change_me@db:5432/reiwa_shinkango
-      SESSION_SECRET: replace-with-a-long-random-secret
+      SESSION_SECRET: local-compose-session-secret-32-characters-minimum
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD: change-me-admin-password
+      ADMIN_PASSWORD: local-compose-admin-password
+      CONTACT_EMAIL: aidhide.support@gmail.com
+      OPERATOR_NAME: 令和新漢語運営事務局
+      DATA_LICENSE: site-only
+      RATE_LIMIT_WINDOW_SECONDS: "60"
+      RATE_LIMIT_POSTS_PER_WINDOW: "12"
+      RATE_LIMIT_COMMENTS_PER_WINDOW: "12"
+      RATE_LIMIT_REPORTS_PER_WINDOW: "8"
+      ALLOW_INSECURE_LOCAL_PRODUCTION: "1"
     ports:
       - "3000:3000"
 

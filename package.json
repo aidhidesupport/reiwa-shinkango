@@ -6,6 +6,7 @@
     "dev": "next dev -H 0.0.0.0",
     "build": "prisma generate && next build",
     "build:postgres": "bash scripts/build-postgres.sh",
+    "check:production-env": "node scripts/check-production-env.mjs",
     "start": "next start",
     "prisma:generate": "prisma generate",
     "prisma:generate:postgres": "bash scripts/prisma-generate-postgres.sh",
@@ -15,8 +16,11 @@
     "db:reset": "npm run prisma:generate && npm run db:init && npm run seed",
     "backup:sqlite": "bash scripts/backup-sqlite.sh",
     "backup:postgres": "bash scripts/backup-postgres.sh",
+    "restore:postgres": "bash scripts/restore-postgres.sh",
+    "verify:staging": "bash scripts/verify-staging.sh",
     "seed": "tsx prisma/seed.ts",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -31,6 +35,7 @@
     "postcss": "^8.5.16"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

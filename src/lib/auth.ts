@@ -14,6 +14,7 @@ const WEAK_SESSION_SECRETS = new Set([
 
 export type SessionPayload = {
   userId: string;
+  sessionVersion: number;
   expiresAt: number;
 };
 
@@ -42,9 +43,10 @@ function sign(value: string) {
   return createHmac("sha256", sessionSecret()).update(value).digest("base64url");
 }
 
-export function createSessionToken(userId: string) {
+export function createSessionToken(userId: string, sessionVersion = 0) {
   const payload: SessionPayload = {
     userId,
+    sessionVersion,
     expiresAt: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const encodedPayload = base64url(JSON.stringify(payload));
@@ -65,7 +67,10 @@ export function verifySessionToken(token: string | undefined): SessionPayload | 
   try {
     const payload = JSON.parse(fromBase64url(encodedPayload)) as SessionPayload;
     if (!payload.userId || payload.expiresAt < Math.floor(Date.now() / 1000)) return null;
-    return payload;
+    return {
+      ...payload,
+      sessionVersion: Number.isInteger(payload.sessionVersion) ? payload.sessionVersion : 0,
+    };
   } catch {
     return null;
   }

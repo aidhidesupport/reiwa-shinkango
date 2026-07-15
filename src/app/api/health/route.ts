@@ -9,10 +9,11 @@ export async function GET() {
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {
+    console.error("Health check failed", error);
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "unknown error",
+        error: "database unavailable",
       },
       { status: 500 },
     );

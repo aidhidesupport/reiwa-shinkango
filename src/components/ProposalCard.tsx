@@ -1,14 +1,16 @@
 import { AlertTriangle, CheckCircle2, MessageSquare, Plus, Scale, Send, ShieldCheck } from "lucide-react";
 import {
-  addComment,
-  addUsageExample,
-  evaluateProposal,
-  reportComment,
-  reportProposal,
-  reportUsageExample,
-  setRecommendation,
+  addCommentWithState,
+  addUsageExampleWithState,
+  evaluateProposalWithState,
+  reportCommentWithState,
+  reportProposalWithState,
+  reportUsageExampleWithState,
+  setRecommendationWithState,
+  submitEditSuggestionWithState,
 } from "@/app/actions";
-import { EVALUATION_LABELS, RECOMMENDATION_LEVELS } from "@/lib/labels";
+import { ActionForm } from "@/components/ActionForm";
+import { EVALUATION_LABELS, RECOMMENDATION_LEVELS, REGISTERS } from "@/lib/labels";
 import { canEditRecommendations } from "@/lib/session";
 import { countLabels, scoreProposal } from "@/lib/scoring";
 import { splitLabels } from "@/lib/normalize";
@@ -125,6 +127,68 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
         ) : null}
       </dl>
 
+      {currentUser ? (
+        <details className="editor-details edit-details">
+          <summary>{canEditRecommendations(currentUser.role) ? "訳語案を編集・修正提案" : "訳語案の修正を提案"}</summary>
+          <ActionForm
+            action={submitEditSuggestionWithState}
+            className="stacked-form compact-form"
+            pendingMessage="修正内容を送信しています…"
+          >
+            <input type="hidden" name="targetType" value="proposal" />
+            <input type="hidden" name="targetId" value={proposal.id} />
+            <input type="hidden" name="returnTo" value={`/terms/${termSlug}#proposal-${proposal.id}`} />
+            <div className="form-grid">
+              <label>
+                訳語案
+                <input name="proposalText" required defaultValue={proposal.text} />
+              </label>
+              <label>
+                文体
+                <select name="register" defaultValue={proposal.register}>
+                  {REGISTERS.map((register) => (
+                    <option key={register.id} value={register.id}>{register.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label>
+              合う文脈
+              <input name="fitContext" required defaultValue={proposal.fitContext} />
+            </label>
+            <label>
+              避けたい文脈
+              <input name="unfitContext" defaultValue={proposal.unfitContext ?? ""} />
+            </label>
+            <label>
+              理由
+              <textarea name="rationale" rows={3} defaultValue={proposal.rationale ?? ""} />
+            </label>
+            <div className="form-grid">
+              <label>
+                良い点
+                <input name="pros" defaultValue={proposal.pros ?? ""} />
+              </label>
+              <label>
+                弱い点
+                <input name="cons" defaultValue={proposal.cons ?? ""} />
+              </label>
+            </div>
+            <label>
+              修正理由
+              <textarea name="reason" required minLength={5} rows={2} placeholder="どこを、なぜ直すか" />
+            </label>
+            {canEditRecommendations(currentUser.role) ? (
+              <label className="check-line">
+                <input type="checkbox" name="applyNow" value="1" />
+                編集者権限で直ちに反映する
+              </label>
+            ) : null}
+            <button type="submit" className="button secondary">修正内容を送信</button>
+          </ActionForm>
+        </details>
+      ) : null}
+
       {latestRecommendation ? (
         <div className="recommendation-note">
           <ShieldCheck size={18} />
@@ -154,7 +218,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
                   <AlertTriangle size={15} />
                   使用例を通報
                 </summary>
-                <form action={reportUsageExample} className="inline-form">
+                <ActionForm action={reportUsageExampleWithState} className="inline-form" pendingMessage="通報しています…">
                   <input type="hidden" name="exampleId" value={example.id} />
                   <input type="hidden" name="proposalId" value={proposal.id} />
                   <input type="hidden" name="termSlug" value={termSlug} />
@@ -167,7 +231,44 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
                   </select>
                   <input name="detail" placeholder="補足" />
                   <button type="submit">送信</button>
-                </form>
+                </ActionForm>
+              </details>
+            ) : null}
+            {currentUser ? (
+              <details className="editor-details edit-details compact-edit">
+                <summary>{canEditRecommendations(currentUser.role) ? "使用例を編集・修正提案" : "使用例の修正を提案"}</summary>
+                <ActionForm
+                  action={submitEditSuggestionWithState}
+                  className="stacked-form compact-form"
+                  pendingMessage="修正内容を送信しています…"
+                >
+                  <input type="hidden" name="targetType" value="example" />
+                  <input type="hidden" name="targetId" value={example.id} />
+                  <input type="hidden" name="returnTo" value={`/terms/${termSlug}#proposal-${proposal.id}-${example.id}`} />
+                  <label>
+                    元文
+                    <textarea name="originalSentence" required minLength={3} rows={3} defaultValue={example.originalSentence} />
+                  </label>
+                  <label>
+                    言い換え
+                    <textarea name="rewrittenSentence" required minLength={3} rows={3} defaultValue={example.rewrittenSentence} />
+                  </label>
+                  <label>
+                    文脈メモ
+                    <input name="contextNote" defaultValue={example.contextNote ?? ""} />
+                  </label>
+                  <label>
+                    修正理由
+                    <textarea name="reason" required minLength={5} rows={2} />
+                  </label>
+                  {canEditRecommendations(currentUser.role) ? (
+                    <label className="check-line">
+                      <input type="checkbox" name="applyNow" value="1" />
+                      編集者権限で直ちに反映する
+                    </label>
+                  ) : null}
+                  <button type="submit" className="button secondary">修正内容を送信</button>
+                </ActionForm>
               </details>
             ) : null}
           </div>
@@ -180,7 +281,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
             <Plus size={15} />
             使用例を追加
           </summary>
-          <form action={addUsageExample} className="stacked-form compact-form example-form">
+          <ActionForm action={addUsageExampleWithState} className="stacked-form compact-form example-form" pendingMessage="使用例を追加しています…">
             <input type="hidden" name="termId" value={termId} />
             <input type="hidden" name="senseId" value={senseId} />
             <input type="hidden" name="proposalId" value={proposal.id} />
@@ -203,7 +304,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
               <Plus size={17} />
               <span>使用例を追加</span>
             </button>
-          </form>
+          </ActionForm>
         </details>
       ) : null}
 
@@ -216,7 +317,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
       </div>
 
       {currentUser ? (
-        <form action={evaluateProposal} className="evaluation-form">
+        <ActionForm action={evaluateProposalWithState} className="evaluation-form" pendingMessage="評価を保存しています…">
           <input type="hidden" name="proposalId" value={proposal.id} />
           <input type="hidden" name="termSlug" value={termSlug} />
           <div className="checkbox-grid">
@@ -231,7 +332,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
             <CheckCircle2 size={17} />
             <span>評価を保存</span>
           </button>
-        </form>
+        </ActionForm>
       ) : null}
 
       <div className="comments">
@@ -250,7 +351,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
                   <AlertTriangle size={15} />
                   コメントを通報
                 </summary>
-                <form action={reportComment} className="inline-form">
+                <ActionForm action={reportCommentWithState} className="inline-form" pendingMessage="通報しています…">
                   <input type="hidden" name="commentId" value={comment.id} />
                   <input type="hidden" name="proposalId" value={proposal.id} />
                   <input type="hidden" name="termSlug" value={termSlug} />
@@ -263,13 +364,13 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
                   </select>
                   <input name="detail" placeholder="補足" />
                   <button type="submit">送信</button>
-                </form>
+                </ActionForm>
               </details>
             ) : null}
           </div>
         ))}
         {currentUser ? (
-          <form action={addComment} className="inline-form">
+          <ActionForm action={addCommentWithState} className="inline-form" pendingMessage="コメントを投稿しています…">
             <input type="hidden" name="proposalId" value={proposal.id} />
             <input type="hidden" name="termSlug" value={termSlug} />
             <select name="category" aria-label="コメント種別" defaultValue="usage">
@@ -284,14 +385,14 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
             <button type="submit" className="icon-button" aria-label="コメントを投稿">
               <Send size={17} />
             </button>
-          </form>
+          </ActionForm>
         ) : null}
       </div>
 
       {currentUser && canEditRecommendations(currentUser.role) ? (
         <details className="editor-details">
           <summary>推奨訳として整理</summary>
-          <form action={setRecommendation} className="stacked-form compact-form">
+          <ActionForm action={setRecommendationWithState} className="stacked-form compact-form" pendingMessage="推奨訳を保存しています…">
             <input type="hidden" name="senseId" value={senseId} />
             <input type="hidden" name="proposalId" value={proposal.id} />
             <input type="hidden" name="termSlug" value={termSlug} />
@@ -315,7 +416,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
               <ShieldCheck size={17} />
               <span>推奨に反映</span>
             </button>
-          </form>
+          </ActionForm>
         </details>
       ) : null}
 
@@ -325,7 +426,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
             <AlertTriangle size={15} />
             通報
           </summary>
-          <form action={reportProposal} className="inline-form">
+          <ActionForm action={reportProposalWithState} className="inline-form" pendingMessage="通報しています…">
             <input type="hidden" name="proposalId" value={proposal.id} />
             <input type="hidden" name="termSlug" value={termSlug} />
             <select name="reason" defaultValue="meaning_error" aria-label="通報理由">
@@ -337,7 +438,7 @@ export function ProposalCard({ termId, termSlug, senseId, proposal, currentUser 
             </select>
             <input name="detail" placeholder="補足" />
             <button type="submit">送信</button>
-          </form>
+          </ActionForm>
         </details>
       ) : null}
     </article>

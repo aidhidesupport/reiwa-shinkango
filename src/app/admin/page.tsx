@@ -1,5 +1,11 @@
-import { Shield, UserRoundCog, UserX } from "lucide-react";
-import { suspendUser, unsuspendUser, updateUserRole } from "@/app/actions";
+import { KeyRound, Shield, UserRoundCog, UserX } from "lucide-react";
+import {
+  resetUserPasswordWithState,
+  suspendUserWithState,
+  unsuspendUserWithState,
+  updateUserRoleWithState,
+} from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
 import { EmptyState } from "@/components/EmptyState";
 import { canAdmin, getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -128,7 +134,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             ) : null}
 
             <div className="admin-user-actions">
-              <form action={updateUserRole}>
+              <ActionForm action={updateUserRoleWithState} pendingMessage="ロールを変更しています…">
                 <input type="hidden" name="userId" value={managedUser.id} />
                 <input type="hidden" name="returnTo" value={returnTo} />
                 <select name="role" defaultValue={managedUser.role} aria-label={`${managedUser.displayName}のロール`}>
@@ -142,29 +148,50 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <Shield size={15} />
                   変更
                 </button>
-              </form>
+              </ActionForm>
 
               {managedUser.suspendedAt ? (
-                <form action={unsuspendUser}>
+                <ActionForm action={unsuspendUserWithState} pendingMessage="停止を解除しています…">
                   <input type="hidden" name="userId" value={managedUser.id} />
                   <input type="hidden" name="returnTo" value={returnTo} />
                   <button type="submit">停止解除</button>
-                </form>
+                </ActionForm>
               ) : (
-                <form action={suspendUser}>
+                <ActionForm action={suspendUserWithState} pendingMessage="アカウントを停止しています…">
                   <input type="hidden" name="userId" value={managedUser.id} />
                   <input type="hidden" name="returnTo" value={returnTo} />
                   <button type="submit" disabled={managedUser.id === currentUser.id}>
                     <UserX size={15} />
                     停止
                   </button>
-                </form>
+                </ActionForm>
               )}
             </div>
+
+            <details className="admin-reset-details">
+              <summary>
+                <KeyRound size={15} />
+                一時パスワードを発行
+              </summary>
+              <ActionForm action={resetUserPasswordWithState} className="inline-form" pendingMessage="一時パスワードを設定しています…">
+                <input type="hidden" name="userId" value={managedUser.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <input
+                  name="temporaryPassword"
+                  type="password"
+                  required
+                  minLength={12}
+                  autoComplete="new-password"
+                  placeholder="12文字以上の一時パスワード"
+                  disabled={managedUser.id === currentUser.id}
+                />
+                <button type="submit" disabled={managedUser.id === currentUser.id}>発行</button>
+              </ActionForm>
+              <p className="muted">安全な方法で本人へ伝えてください。次回ログイン後に変更を求めます。</p>
+            </details>
           </article>
         ))}
       </section>
     </div>
   );
 }
-

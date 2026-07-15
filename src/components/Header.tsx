@@ -52,7 +52,7 @@ export async function Header() {
         {currentUser ? (
           <div className="user-switcher">
             <span className="role-pill">{roles[currentUser.role] ?? "利用者"}</span>
-            <span className="user-name">{currentUser.displayName}</span>
+            <Link href="/account" className="user-name">{currentUser.displayName}</Link>
             <form action={signOut}>
               <button type="submit" aria-label="ログアウト">
                 <LogOut size={16} />

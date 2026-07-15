@@ -13,12 +13,16 @@
 - 観点別評価ラベル
 - コメントによる議論
 - 編集者による推奨訳設定
+- 意味・訳語案・使用例の修正提案と直接編集
+- 修正提案の承認・却下、理由付き差し戻し
 - 変更履歴
 - 通報キュー
 - 編集者ダッシュボード
-- 投稿ルール、利用規約、プライバシーポリシー雛形
+- 表示名・ハンドル・パスワード変更、管理者による一時パスワード発行
+- 投稿ルール、利用規約、プライバシーポリシー
 - ヘルスチェック、サイトマップ、robots
 - SQLite/PostgreSQL向け運用スクリプト
+- 本番環境変数検査とPlaywright E2Eテスト
 
 ## セットアップ
 
@@ -47,6 +51,7 @@ npm run test
 npm run typecheck
 npm run build
 npm audit --omit=dev
+npm run test:e2e
 ```
 
 ## DB
@@ -55,4 +60,4 @@ npm audit --omit=dev
 
 Prisma CLI の `db push` がこの環境で安定しなかったため、SQLite の初期DDLは [prisma/init.sql](./prisma/init.sql) に固定しています。
 
-公開時は PostgreSQL を使う想定です。汎用手順は [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)、Supabase で使う場合は [docs/SUPABASE.md](./docs/SUPABASE.md) を参照してください。
+公開時は PostgreSQL を使う想定です。具体的な担当分けと公開判定は [docs/PUBLICATION_CHECKLIST.md](./docs/PUBLICATION_CHECKLIST.md)、汎用手順は [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)、Supabase で使う場合は [docs/SUPABASE.md](./docs/SUPABASE.md) を参照してください。

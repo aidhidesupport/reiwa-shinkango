@@ -8,25 +8,29 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  displayName  String
-  handle       String    @unique
-  email        String?   @unique
-  passwordHash String?
-  role         String    @default("user")
-  reputation   Int       @default(0)
-  createdAt    DateTime  @default(now())
-  suspendedAt  DateTime?
+  id                 String    @id @default(cuid())
+  displayName        String
+  handle             String    @unique
+  email              String?   @unique
+  passwordHash       String?
+  mustChangePassword Boolean   @default(false)
+  sessionVersion     Int       @default(0)
+  role               String    @default("user")
+  reputation         Int       @default(0)
+  createdAt          DateTime  @default(now())
+  suspendedAt        DateTime?
 
-  terms           Term[]                @relation("TermCreatedBy")
-  senses          Sense[]               @relation("SenseCreatedBy")
-  proposals       TranslationProposal[] @relation("ProposalCreatedBy")
-  examples        UsageExample[]        @relation("ExampleCreatedBy")
-  evaluations     Evaluation[]
-  comments        Comment[]
-  recommendations Recommendation[]      @relation("RecommendationDecidedBy")
-  revisions       Revision[]            @relation("RevisionCreatedBy")
-  reports         Report[]              @relation("ReportCreatedBy")
+  terms               Term[]                @relation("TermCreatedBy")
+  senses              Sense[]               @relation("SenseCreatedBy")
+  proposals           TranslationProposal[] @relation("ProposalCreatedBy")
+  examples            UsageExample[]        @relation("ExampleCreatedBy")
+  evaluations         Evaluation[]
+  comments            Comment[]
+  recommendations     Recommendation[]      @relation("RecommendationDecidedBy")
+  revisions           Revision[]            @relation("RevisionCreatedBy")
+  reports             Report[]              @relation("ReportCreatedBy")
+  suggestions         EditSuggestion[]      @relation("SuggestionCreatedBy")
+  reviewedSuggestions EditSuggestion[]      @relation("SuggestionReviewedBy")
 }
 
 model Domain {
@@ -213,4 +217,24 @@ model Report {
   createdAt   DateTime @default(now())
 
   createdBy User @relation("ReportCreatedBy", fields: [createdById], references: [id])
+}
+
+model EditSuggestion {
+  id           String    @id @default(cuid())
+  targetType   String
+  targetId     String
+  proposedJson String
+  reason       String
+  status       String    @default("pending")
+  createdById  String
+  reviewedById String?
+  reviewNote   String?
+  createdAt    DateTime  @default(now())
+  reviewedAt   DateTime?
+
+  createdBy  User  @relation("SuggestionCreatedBy", fields: [createdById], references: [id])
+  reviewedBy User? @relation("SuggestionReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
 }

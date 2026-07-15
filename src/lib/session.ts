@@ -7,17 +7,20 @@ export async function getCurrentUser() {
   const payload = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!payload) return null;
   const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-  if (!user || user.suspendedAt) return null;
+  if (!user || user.suspendedAt || user.sessionVersion !== payload.sessionVersion) return null;
   return user;
 }
 
-export async function requireActiveUser() {
+export async function requireActiveUser({ allowPasswordChange = false }: { allowPasswordChange?: boolean } = {}) {
   const user = await getCurrentUser();
   if (!user) {
     throw new Error("ログインが必要です。");
   }
   if (user.suspendedAt) {
     throw new Error("このアカウントは停止されています。");
+  }
+  if (user.mustChangePassword && !allowPasswordChange) {
+    throw new Error("先に一時パスワードを新しいパスワードへ変更してください。");
   }
   return user;
 }

@@ -59,6 +59,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 main {
   min-height: calc(100vh - 72px);
 }
@@ -326,7 +331,7 @@ main {
 }
 
 .dashboard-metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .content-grid,
@@ -943,6 +948,74 @@ main {
   resize: vertical;
 }
 
+.stacked-form label.check-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.check-line input {
+  width: auto;
+}
+
+.form-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.form-status.error {
+  border: 1px solid #dfafa7;
+  background: #fff0ed;
+  color: #813326;
+}
+
+.form-status.success {
+  border: 1px solid #a7cbc5;
+  background: var(--accent-soft);
+  color: #16574f;
+}
+
+.form-status.pending {
+  border: 1px solid var(--line);
+  background: #fbf8f2;
+  color: var(--muted);
+}
+
+.inline-form > .form-feedback,
+.compact-recommend-form > .form-feedback,
+.suggestion-review > .form-feedback {
+  grid-column: 1 / -1;
+}
+
+.account-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.notice {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  line-height: 1.6;
+}
+
+.notice.success {
+  border-color: #a7cbc5;
+  background: var(--accent-soft);
+}
+
+.notice.warning {
+  border-color: #d9bd75;
+  background: #fff4cf;
+}
+
 .form-subsection {
   display: grid;
   gap: 14px;
@@ -1047,6 +1120,86 @@ main {
   border-radius: var(--radius);
   background: var(--surface-strong);
   color: var(--ink);
+  font-weight: 800;
+}
+
+.suggestion-queue {
+  margin-top: 34px;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 12px;
+}
+
+.suggestion-item {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr);
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.suggestion-item h3,
+.suggestion-item p {
+  margin: 0 0 8px;
+}
+
+.suggestion-fields {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.suggestion-fields div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr);
+  gap: 1px;
+}
+
+.suggestion-fields dt,
+.suggestion-fields dd {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--surface-strong);
+  line-height: 1.5;
+}
+
+.suggestion-fields dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.suggestion-review {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.suggestion-review input,
+.suggestion-review select {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+}
+
+.suggestion-review button {
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
   font-weight: 800;
 }
 
@@ -1165,6 +1318,38 @@ main {
   opacity: 0.45;
 }
 
+.admin-reset-details,
+.rollback-details {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-reset-details summary,
+.rollback-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-reset-details .inline-form,
+.rollback-details .inline-form {
+  margin-top: 10px;
+}
+
+.admin-reset-details p {
+  margin: 8px 0 0;
+}
+
+.prose-page a {
+  color: var(--accent);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .note-box {
   display: grid;
   gap: 6px;
@@ -1270,6 +1455,31 @@ main {
 }
 
 @media (max-width: 720px) {
+  .header-nav {
+    grid-column: 1 / -1;
+    order: 2;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .header-search {
+    grid-column: 1 / -1;
+    order: 3;
+    width: 100%;
+  }
+
+  .user-switcher {
+    grid-column: 2;
+    order: 0;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .user-switcher .user-name {
+    display: none;
+  }
+
   .page-shell,
   .page-shell.narrow {
     width: min(100% - 28px, var(--content));
@@ -1290,6 +1500,8 @@ main {
   .form-grid,
   .example-pair,
   .compact-recommend-form,
+  .suggestion-item,
+  .suggestion-review,
   .revision-diff-head,
   .revision-diff-row {
     grid-template-columns: 1fr;

@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { revertRevisionWithState } from "@/app/actions";
+import { ActionForm } from "@/components/ActionForm";
 import { diffRevisionJson } from "@/lib/revisions";
+import { decodePathSegment } from "@/lib/routing";
+import { canEditRecommendations, getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 type HistoryPageProps = {
@@ -11,13 +15,20 @@ type HistoryPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage({ params }: HistoryPageProps) {
-  const { slug } = await params;
+  const [rawParams, currentUser] = await Promise.all([params, getCurrentUser()]);
+  const slug = decodePathSegment(rawParams.slug);
   const term = await prisma.term.findUnique({
     where: { slug },
     include: {
       senses: {
         include: {
-          proposals: true,
+          examples: true,
+          recommendations: true,
+          proposals: {
+            include: {
+              recommendations: true,
+            },
+          },
         },
       },
     },
@@ -29,6 +40,8 @@ export default async function HistoryPage({ params }: HistoryPageProps) {
     term.id,
     ...term.senses.map((sense) => sense.id),
     ...term.senses.flatMap((sense) => sense.proposals.map((proposal) => proposal.id)),
+    ...term.senses.flatMap((sense) => sense.examples.map((example) => example.id)),
+    ...term.senses.flatMap((sense) => sense.recommendations.map((recommendation) => recommendation.id)),
   ];
 
   const revisions = await prisma.revision.findMany({
@@ -56,7 +69,7 @@ export default async function HistoryPage({ params }: HistoryPageProps) {
 
       <div className="timeline">
         {revisions.map((revision) => (
-          <article key={revision.id} className="timeline-item">
+          <article key={revision.id} id={`revision-${revision.id}`} className="timeline-item">
             <span>{revision.createdAt.toLocaleString("ja-JP")} / {revision.createdBy.displayName}</span>
             <h2>{revision.reason}</h2>
             <div className="revision-diff">
@@ -73,6 +86,17 @@ export default async function HistoryPage({ params }: HistoryPageProps) {
                 </div>
               ))}
             </div>
+            {currentUser && canEditRecommendations(currentUser.role) && revision.beforeJson && ["sense", "proposal", "example"].includes(revision.entityType) ? (
+              <details className="rollback-details">
+                <summary>この変更を差し戻す</summary>
+                <ActionForm action={revertRevisionWithState} className="inline-form" pendingMessage="変更を差し戻しています…">
+                  <input type="hidden" name="revisionId" value={revision.id} />
+                  <input type="hidden" name="returnTo" value={`/terms/${term.slug}/history#revision-${revision.id}`} />
+                  <input name="reason" required minLength={5} placeholder="差し戻し理由" />
+                  <button type="submit">差し戻す</button>
+                </ActionForm>
+              </details>
+            ) : null}
           </article>
         ))}
       </div>
