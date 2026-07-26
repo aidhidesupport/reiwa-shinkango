@@ -229,7 +229,6 @@ async function enforceRateLimit(userId: string, kind: RateLimitKind) {
 
 const termSchema = z.object({
   headword: z.string().min(1),
-  summary: z.string().min(8),
   senseTitle: z.string().min(1),
   senseDescription: z.string().min(8),
 });
@@ -350,7 +349,6 @@ export async function createTerm(formData: FormData) {
   await enforceRateLimit(user.id, "post");
   const parsed = termSchema.parse({
     headword: text(formData, "headword"),
-    summary: text(formData, "summary"),
     senseTitle: text(formData, "senseTitle"),
     senseDescription: text(formData, "senseDescription"),
   });
@@ -371,7 +369,7 @@ export async function createTerm(formData: FormData) {
         slug,
         normalizedHeadword: normalizeForSearch(parsed.headword),
         originalWord: optionalText(formData, "originalWord"),
-        summary: parsed.summary,
+        summary: parsed.senseDescription,
         createdById: user.id,
       },
     });
@@ -437,7 +435,7 @@ export async function createTerm(formData: FormData) {
         entityId: createdTerm.id,
         afterJson: JSON.stringify({
           headword: parsed.headword,
-          summary: parsed.summary,
+          summary: parsed.senseDescription,
           firstSense: parsed.senseTitle,
         }),
         reason: "項目を新規作成",

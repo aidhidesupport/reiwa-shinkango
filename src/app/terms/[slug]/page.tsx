@@ -69,6 +69,9 @@ export default async function TermPage({ params }: TermPageProps) {
 
   if (!term) notFound();
   const canSeeHidden = currentUser ? canModerate(currentUser.role) : false;
+  const summaryRepeatsSense = term.senses.some(
+    (sense) => sense.description.trim() === term.summary.trim(),
+  );
 
   return (
     <div className="page-shell">
@@ -78,7 +81,7 @@ export default async function TermPage({ params }: TermPageProps) {
             <h1>{term.headword}</h1>
             {term.originalWord ? <span>{term.originalWord}</span> : null}
           </div>
-          <p>{term.summary}</p>
+          {summaryRepeatsSense ? null : <p>{term.summary}</p>}
           <div className="tag-row">
             {term.tags.map(({ tag }) => (
               <Link key={tag.id} href={`/search?q=${encodeURIComponent(tag.name)}`}>

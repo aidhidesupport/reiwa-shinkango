@@ -30,7 +30,7 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
           <span aria-hidden="true">1</span>
           <div>
             <h2 id="term-step-word">取り上げる言葉</h2>
-            <p>日本語に言い換えたい言葉と、その全体像を入力します。</p>
+            <p>日本語に言い換えたい言葉そのものを入力します。</p>
           </div>
         </div>
         <label>
@@ -42,30 +42,9 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
           <input name="originalWord" placeholder="例：accountability" />
         </label>
         <label>
-          言葉全体の概要（必須）
-          <textarea
-            name="summary"
-            required
-            minLength={8}
-            rows={3}
-            placeholder="例：組織や個人が、判断や行動について説明を求められる場面で使われる言葉です。"
-          />
+          タグ（任意）
+          <input name="tags" placeholder="例：会議、企画、行政" />
         </label>
-        <div className="form-grid">
-          <label>
-            主に使われる分野（任意）
-            <select name="domainId" defaultValue="">
-              <option value="">未分類</option>
-              {domains.map((domain) => (
-                <option key={domain.id} value={domain.id}>{domain.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            タグ（任意）
-            <input name="tags" placeholder="例：会議、企画、行政" />
-          </label>
-        </div>
       </section>
 
       <section className="form-step" aria-labelledby="term-step-sense">
@@ -89,6 +68,15 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
             rows={3}
             placeholder="例：判断や行動の内容と理由を、関係者に説明する責任を指します。"
           />
+        </label>
+        <label>
+          この使われ方の分野（任意）
+          <select name="domainId" defaultValue="">
+            <option value="">未分類</option>
+            {domains.map((domain) => (
+              <option key={domain.id} value={domain.id}>{domain.name}</option>
+            ))}
+          </select>
         </label>
       </section>
 
