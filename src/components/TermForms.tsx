@@ -16,52 +16,97 @@ type Domain = {
 export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain[]; defaultHeadword?: string }) {
   return (
     <ActionForm action={createTermWithState} className="stacked-form" pendingMessage="項目を作成しています…">
-      <div className="form-grid">
+      <section className="term-form-guide" aria-labelledby="term-form-guide-title">
+        <h2 id="term-form-guide-title">この画面で登録するもの</h2>
+        <ol>
+          <li><strong>言葉</strong><span>取り上げたい横文字・専門語</span></li>
+          <li><strong>使われ方</strong><span>その言葉が何を指すか</span></li>
+          <li><strong>日本語案</strong><span>その使われ方に合う言い換え</span></li>
+        </ol>
+      </section>
+
+      <section className="form-step" aria-labelledby="term-step-word">
+        <div className="form-step-heading">
+          <span aria-hidden="true">1</span>
+          <div>
+            <h2 id="term-step-word">取り上げる言葉</h2>
+            <p>日本語に言い換えたい言葉と、その全体像を入力します。</p>
+          </div>
+        </div>
         <label>
-          横文字
-          <input name="headword" required defaultValue={defaultHeadword} placeholder="例: アカウンタビリティ" />
+          取り上げる言葉（必須）
+          <input name="headword" required defaultValue={defaultHeadword} placeholder="例：アカウンタビリティ" />
         </label>
         <label>
-          原語
-          <input name="originalWord" placeholder="例: accountability" />
-        </label>
-      </div>
-      <label>
-        概要
-        <textarea name="summary" required rows={3} placeholder="この語がどのように使われるか" />
-      </label>
-      <div className="form-grid">
-        <label>
-          分野
-          <select name="domainId" defaultValue="">
-            <option value="">未分類</option>
-            {domains.map((domain) => (
-              <option key={domain.id} value={domain.id}>{domain.name}</option>
-            ))}
-          </select>
+          元の外国語（任意）
+          <input name="originalWord" placeholder="例：accountability" />
         </label>
         <label>
-          タグ
-          <input name="tags" placeholder="会議、企画、行政" />
+          言葉全体の概要（必須）
+          <textarea
+            name="summary"
+            required
+            minLength={8}
+            rows={3}
+            placeholder="例：組織や個人が、判断や行動について説明を求められる場面で使われる言葉です。"
+          />
         </label>
-      </div>
-      <label>
-        最初の意味
-        <input name="senseTitle" required placeholder="例: 説明責任" />
-      </label>
-      <label>
-        意味の説明
-        <textarea name="senseDescription" required rows={3} placeholder="この文脈では何を指すか" />
-      </label>
-      <section className="form-subsection">
-        <h3>訳語案</h3>
         <div className="form-grid">
           <label>
-            訳語案
-            <input name="proposalText" placeholder="例: 説明責任" />
+            主に使われる分野（任意）
+            <select name="domainId" defaultValue="">
+              <option value="">未分類</option>
+              {domains.map((domain) => (
+                <option key={domain.id} value={domain.id}>{domain.name}</option>
+              ))}
+            </select>
           </label>
           <label>
-            文体
+            タグ（任意）
+            <input name="tags" placeholder="例：会議、企画、行政" />
+          </label>
+        </div>
+      </section>
+
+      <section className="form-step" aria-labelledby="term-step-sense">
+        <div className="form-step-heading">
+          <span aria-hidden="true">2</span>
+          <div>
+            <h2 id="term-step-sense">この言葉の使われ方</h2>
+            <p>同じ言葉でも意味が分かれることがあります。まず1つの使われ方を登録します。</p>
+          </div>
+        </div>
+        <label>
+          使われ方を短く表す名前（必須）
+          <input name="senseTitle" required placeholder="例：事情を説明する責任" />
+        </label>
+        <label>
+          この使われ方の説明（必須）
+          <textarea
+            name="senseDescription"
+            required
+            minLength={8}
+            rows={3}
+            placeholder="例：判断や行動の内容と理由を、関係者に説明する責任を指します。"
+          />
+        </label>
+      </section>
+
+      <section className="form-step" aria-labelledby="term-step-proposal">
+        <div className="form-step-heading">
+          <span aria-hidden="true">3</span>
+          <div>
+            <h2 id="term-step-proposal">合いそうな日本語案</h2>
+            <p>よい案がまだ浮かばなければ、この欄は空欄のまま投稿できます。</p>
+          </div>
+        </div>
+        <div className="form-grid">
+          <label>
+            日本語案（任意）
+            <input name="proposalText" placeholder="例：説明責任" />
+          </label>
+          <label>
+            文体（任意）
             <select name="register" defaultValue="neutral">
               {REGISTERS.map((register) => (
                 <option key={register.id} value={register.id}>{register.label}</option>
@@ -70,21 +115,21 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
           </label>
         </div>
         <label>
-          合う文脈
-          <input name="fitContext" placeholder="例: 行政文書、組織運営" />
+          よく合う場面（任意）
+          <input name="fitContext" placeholder="例：行政文書、組織運営" />
         </label>
         <label>
-          理由
-          <textarea name="rationale" rows={2} placeholder="この訳がなぜ合うか" />
+          この日本語案を選んだ理由（任意）
+          <textarea name="rationale" rows={2} placeholder="例：意味が伝わりやすく、すでに広く使われているため。" />
         </label>
         <div className="form-grid">
           <label>
-            元文
-            <textarea name="originalSentence" rows={3} placeholder="横文字を含む文" />
+            元の言葉を使った文（任意）
+            <textarea name="originalSentence" rows={3} placeholder="例：経営にはアカウンタビリティが必要です。" />
           </label>
           <label>
-            言い換え
-            <textarea name="rewrittenSentence" rows={3} placeholder="訳語案を使った文" />
+            日本語案に言い換えた文（任意）
+            <textarea name="rewrittenSentence" rows={3} placeholder="例：経営には説明責任が必要です。" />
           </label>
         </div>
       </section>
@@ -99,17 +144,17 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
 export function AddSenseForm({ termId, termSlug, domains }: { termId: string; termSlug: string; domains: Domain[] }) {
   return (
     <details className="section-details">
-      <summary>意味を追加</summary>
-      <ActionForm action={addSenseWithState} className="stacked-form compact-form" pendingMessage="意味を追加しています…">
+      <summary>別の使われ方を追加</summary>
+      <ActionForm action={addSenseWithState} className="stacked-form compact-form" pendingMessage="使われ方を追加しています…">
         <input type="hidden" name="termId" value={termId} />
         <input type="hidden" name="termSlug" value={termSlug} />
         <label>
-          見出し
-          <input name="title" required />
+          使われ方を短く表す名前
+          <input name="title" required placeholder="例：結果について責任を負うこと" />
         </label>
         <label>
-          説明
-          <textarea name="description" required rows={3} />
+          この使われ方の説明
+          <textarea name="description" required minLength={8} rows={3} />
         </label>
         <label>
           分野
@@ -219,7 +264,7 @@ export function EditSenseForm({
 }) {
   return (
     <details className="editor-details edit-details">
-      <summary>{canApplyNow ? "意味を編集・修正提案" : "意味の修正を提案"}</summary>
+      <summary>{canApplyNow ? "使われ方を編集・修正提案" : "使われ方の修正を提案"}</summary>
       <ActionForm
         action={submitEditSuggestionWithState}
         className="stacked-form compact-form"
@@ -229,11 +274,11 @@ export function EditSenseForm({
         <input type="hidden" name="targetId" value={sense.id} />
         <input type="hidden" name="returnTo" value={`/terms/${termSlug}#sense-${sense.id}`} />
         <label>
-          見出し
+          使われ方を短く表す名前
           <input name="title" required defaultValue={sense.title} />
         </label>
         <label>
-          説明
+          この使われ方の説明
           <textarea name="description" required minLength={8} rows={3} defaultValue={sense.description} />
         </label>
         <label>

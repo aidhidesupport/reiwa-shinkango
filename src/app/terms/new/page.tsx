@@ -43,12 +43,12 @@ export default async function NewTermPage({ searchParams }: NewTermPageProps) {
       <section className="page-title">
         <p className="eyebrow">新規項目</p>
         <h1>横文字を持ち込む</h1>
-        <p>最初の意味と訳語案まで入れると、すぐ比較・評価できる項目になります。</p>
+        <p>取り上げたい言葉、その使われ方、合いそうな日本語案の順に登録します。</p>
       </section>
       {similarTerms.length > 0 ? (
         <section className="similar-terms">
           <h2>近い項目</h2>
-          <p>同じ語や表記揺れがある場合は、既存項目に意味や訳語案を追加してください。</p>
+          <p>同じ言葉や表記違いがある場合は、既存項目に別の使われ方や日本語案を追加してください。</p>
           <div>
             {similarTerms.map((term) => (
               <Link key={term.id} href={`/terms/${term.slug}`}>

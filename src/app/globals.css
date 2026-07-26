@@ -1023,6 +1023,84 @@ main {
   border-top: 1px solid var(--line);
 }
 
+.term-form-guide {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.term-form-guide h2,
+.form-step-heading h2,
+.form-step-heading p {
+  margin: 0;
+}
+
+.term-form-guide h2 {
+  font-size: 16px;
+}
+
+.term-form-guide ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.term-form-guide li {
+  display: grid;
+  gap: 3px;
+  padding-left: 11px;
+  border-left: 3px solid var(--accent);
+}
+
+.term-form-guide li span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form-step {
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.form-step-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.form-step-heading > span {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.form-step-heading h2 {
+  font-size: 18px;
+}
+
+.form-step-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .example-form {
   border-top: 0;
 }
@@ -1497,6 +1575,7 @@ main {
   .policy-list,
   .admin-search,
   .admin-user-stats,
+  .term-form-guide ol,
   .form-grid,
   .example-pair,
   .compact-recommend-form,

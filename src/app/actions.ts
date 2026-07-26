@@ -462,7 +462,7 @@ export async function addSense(formData: FormData) {
   const domainId = optionalText(formData, "domainId");
 
   if (!termId || !title || !description) {
-    throw new Error("意味の見出しと説明は必須です。");
+    throw new Error("使われ方の名前と説明は必須です。");
   }
   await requireTermTarget(termId, termSlug);
 
@@ -921,8 +921,8 @@ export async function updateUserRole(formData: FormData) {
 }
 
 const senseEditSchema = z.object({
-  title: z.string().trim().min(1, "意味の見出しを入力してください。").max(120),
-  description: z.string().trim().min(8, "意味の説明は8文字以上で入力してください。").max(2000),
+  title: z.string().trim().min(1, "使われ方を短く表す名前を入力してください。").max(120),
+  description: z.string().trim().min(8, "使われ方の説明は8文字以上で入力してください。").max(2000),
   usageNote: z.string().trim().max(1000).nullable(),
   domainId: z.string().trim().max(100).nullable(),
 });

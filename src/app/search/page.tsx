@@ -111,7 +111,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       {query && terms.length === 0 ? (
         <EmptyState
           title="まだ登録されていません"
-          body={`「${query}」の項目を作成して、最初の訳語案を投稿できます。`}
+          body={`「${query}」の使われ方を整理し、合いそうな日本語案を投稿できます。`}
           actionLabel="項目を作成"
           actionHref={`/terms/new?headword=${encodeURIComponent(query)}`}
         />
