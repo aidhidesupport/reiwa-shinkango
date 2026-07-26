@@ -1126,6 +1126,64 @@ main {
   line-height: 1.6;
 }
 
+.proposal-step {
+  padding: 20px;
+  border: 1px solid #a9cdc6;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #f3faf8 0%, #fffdfa 100%);
+}
+
+.stacked-form .proposal-main-field {
+  display: grid;
+  gap: 9px;
+}
+
+.stacked-form .proposal-main-field label {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.stacked-form .proposal-main-field input {
+  padding: 15px 16px;
+  border: 2px solid var(--accent);
+  background: #fff;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.proposal-main-field > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.proposal-support-fields {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 72%);
+}
+
+.proposal-support-fields legend {
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.proposal-support-fields > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .sense-classification {
   margin-bottom: 8px;
 }

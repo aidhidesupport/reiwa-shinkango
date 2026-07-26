@@ -86,50 +86,68 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
         </fieldset>
       </section>
 
-      <section className="form-step" aria-labelledby="term-step-proposal">
+      <section className="form-step proposal-step" aria-labelledby="term-step-proposal">
         <div className="form-step-heading">
           <span aria-hidden="true">3</span>
           <div>
-            <h2 id="term-step-proposal">合いそうな日本語案</h2>
-            <p>よい案がまだ浮かばなければ、この欄は空欄のまま投稿できます。</p>
+            <h2 id="term-step-proposal">日本語案を登録する</h2>
+            <p>この投稿の中心です。この使われ方を自然に表せる日本語を、まず1案入力します。</p>
           </div>
         </div>
-        <div className="form-grid">
-          <label>
-            日本語案（任意）
-            <input name="proposalText" placeholder="例：説明責任" />
-          </label>
-          <label>
-            文体（任意）
-            <select name="register" defaultValue="neutral">
-              {REGISTERS.map((register) => (
-                <option key={register.id} value={register.id}>{register.label}</option>
-              ))}
-            </select>
-          </label>
+        <div className="proposal-main-field">
+          <label htmlFor="new-term-proposal">日本語案（必須）</label>
+          <input
+            id="new-term-proposal"
+            name="proposalText"
+            required
+            maxLength={120}
+            aria-describedby="new-term-proposal-help"
+            placeholder="例：説明責任"
+          />
+          <p id="new-term-proposal-help">長い説明ではなく、実際に言い換えとして使える短い案を入力します。</p>
         </div>
-        <label>
-          よく合う場面（任意）
-          <input name="fitContext" placeholder="例：行政文書、組織運営" />
-        </label>
-        <label>
-          この日本語案を選んだ理由（任意）
-          <textarea name="rationale" rows={2} placeholder="例：意味が伝わりやすく、すでに広く使われているため。" />
-        </label>
-        <div className="form-grid">
+
+        <fieldset className="proposal-support-fields">
+          <legend>案の使いどころ・理由（任意）</legend>
+          <p>どんな場面に合う案なのかを補足すると、ほかの人が評価しやすくなります。</p>
+          <div className="form-grid">
+            <label>
+              文体
+              <select name="register" defaultValue="neutral">
+                {REGISTERS.map((register) => (
+                  <option key={register.id} value={register.id}>{register.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              よく合う場面
+              <input name="fitContext" placeholder="例：行政文書、組織運営" />
+            </label>
+          </div>
           <label>
-            元の言葉を使った文（任意）
-            <textarea name="originalSentence" rows={3} placeholder="例：経営にはアカウンタビリティが必要です。" />
+            この案を選んだ理由
+            <textarea name="rationale" rows={2} placeholder="例：意味が伝わりやすく、すでに広く使われているため。" />
           </label>
-          <label>
-            日本語案に言い換えた文（任意）
-            <textarea name="rewrittenSentence" rows={3} placeholder="例：経営には説明責任が必要です。" />
-          </label>
-        </div>
+        </fieldset>
+
+        <fieldset className="proposal-support-fields">
+          <legend>言い換え例（任意）</legend>
+          <p>元の文と言い換えた文を、セットで入力します。</p>
+          <div className="form-grid">
+            <label>
+              元の言葉を使った文
+              <textarea name="originalSentence" rows={3} placeholder="例：経営にはアカウンタビリティが必要です。" />
+            </label>
+            <label>
+              日本語案に言い換えた文
+              <textarea name="rewrittenSentence" rows={3} placeholder="例：経営には説明責任が必要です。" />
+            </label>
+          </div>
+        </fieldset>
       </section>
       <button type="submit" className="button">
         <Plus size={17} />
-        <span>項目を作成</span>
+        <span>この日本語案を投稿</span>
       </button>
     </ActionForm>
   );
@@ -188,16 +206,16 @@ export function AddProposalForm({
 }) {
   return (
     <details className="section-details">
-      <summary>訳語案を追加</summary>
-      <ActionForm action={addProposalWithState} className="stacked-form compact-form" pendingMessage="訳語案を投稿しています…">
+      <summary>日本語案を追加</summary>
+      <ActionForm action={addProposalWithState} className="stacked-form compact-form" pendingMessage="日本語案を投稿しています…">
         <input type="hidden" name="termId" value={termId} />
         <input type="hidden" name="termSlug" value={termSlug} />
         <input type="hidden" name="senseId" value={senseId} />
+        <div className="proposal-main-field">
+          <label htmlFor={`proposal-text-${senseId}`}>日本語案（必須）</label>
+          <input id={`proposal-text-${senseId}`} name="proposalText" required maxLength={120} />
+        </div>
         <div className="form-grid">
-          <label>
-            訳語案
-            <input name="proposalText" required />
-          </label>
           <label>
             文体
             <select name="register" defaultValue="neutral">

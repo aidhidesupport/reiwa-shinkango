@@ -10,7 +10,7 @@ type NewTermPageProps = {
 };
 
 export const metadata = {
-  title: "横文字を投稿",
+  title: "日本語案を投稿",
 };
 
 export const dynamic = "force-dynamic";
@@ -41,9 +41,9 @@ export default async function NewTermPage({ searchParams }: NewTermPageProps) {
   return (
     <div className="page-shell narrow">
       <section className="page-title">
-        <p className="eyebrow">新規項目</p>
-        <h1>横文字を持ち込む</h1>
-        <p>取り上げたい言葉、その使われ方、合いそうな日本語案の順に登録します。</p>
+        <p className="eyebrow">日本語案を投稿</p>
+        <h1>横文字の日本語案をつくる</h1>
+        <p>言い換えたい言葉と使われ方を整理し、中心となる日本語案を1つ登録します。</p>
       </section>
       {similarTerms.length > 0 ? (
         <section className="similar-terms">

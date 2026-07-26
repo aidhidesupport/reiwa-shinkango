@@ -263,6 +263,7 @@ const termSchema = z.object({
   headword: z.string().min(1),
   senseTitle: z.string().min(1),
   senseDescription: z.string().min(8),
+  proposalText: z.string().trim().min(1, "日本語案を入力してください。").max(120),
 });
 
 const signInSchema = z.object({
@@ -383,11 +384,14 @@ export async function createTerm(formData: FormData) {
     headword: text(formData, "headword"),
     senseTitle: text(formData, "senseTitle"),
     senseDescription: text(formData, "senseDescription"),
+    proposalText: text(formData, "proposalText"),
   });
   const domainId = optionalText(formData, "domainId");
-  const proposalText = optionalText(formData, "proposalText");
   const originalSentence = optionalText(formData, "originalSentence");
   const rewrittenSentence = optionalText(formData, "rewrittenSentence");
+  if ((originalSentence && !rewrittenSentence) || (!originalSentence && rewrittenSentence)) {
+    throw new Error("言い換え例は、元の文と言い換えた文をセットで入力してください。");
+  }
   const slug = await uniqueSlug(parsed.headword);
   const tagNames = tagNamesFromForm(formData);
 
@@ -414,32 +418,30 @@ export async function createTerm(formData: FormData) {
     });
     await replaceSenseTags(tx, sense.id, tagNames);
 
-    if (proposalText) {
-      const proposal = await tx.translationProposal.create({
+    const proposal = await tx.translationProposal.create({
+      data: {
+        senseId: sense.id,
+        text: parsed.proposalText,
+        fitContext: text(formData, "fitContext") || "未整理",
+        rationale: optionalText(formData, "rationale"),
+        register: text(formData, "register") || "neutral",
+        status: originalSentence && rewrittenSentence ? "active" : "draft",
+        createdById: user.id,
+      },
+    });
+
+    if (originalSentence && rewrittenSentence) {
+      await tx.usageExample.create({
         data: {
+          termId: createdTerm.id,
           senseId: sense.id,
-          text: proposalText,
-          fitContext: text(formData, "fitContext") || "未整理",
-          rationale: optionalText(formData, "rationale"),
-          register: text(formData, "register") || "neutral",
-          status: originalSentence && rewrittenSentence ? "active" : "draft",
+          proposalId: proposal.id,
+          originalSentence,
+          rewrittenSentence,
+          contextNote: optionalText(formData, "contextNote"),
           createdById: user.id,
         },
       });
-
-      if (originalSentence && rewrittenSentence) {
-        await tx.usageExample.create({
-          data: {
-            termId: createdTerm.id,
-            senseId: sense.id,
-            proposalId: proposal.id,
-            originalSentence,
-            rewrittenSentence,
-            contextNote: optionalText(formData, "contextNote"),
-            createdById: user.id,
-          },
-        });
-      }
     }
 
     await tx.revision.create({
@@ -452,6 +454,7 @@ export async function createTerm(formData: FormData) {
           firstSense: parsed.senseTitle,
           firstSenseDomainId: domainId,
           firstSenseTags: tagNames,
+          firstProposal: parsed.proposalText,
         }),
         reason: "項目を新規作成",
         createdById: user.id,

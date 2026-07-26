@@ -30,7 +30,8 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("最初の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("承認前に表示される最初の説明文です。");
   await page.getByLabel("タグ（複数可）").fill("修正前タグ");
-  await page.getByRole("button", { name: "項目を作成" }).click();
+  await page.getByLabel("日本語案（必須）").fill("E2E日本語案");
+  await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page).toHaveURL(/\/terms\/e2e/);
 
   const editDetails = page.locator("details").filter({ has: page.getByText("使われ方の修正を提案", { exact: true }) }).first();
@@ -133,11 +134,11 @@ test("通報の非表示・処理・却下とユーザー停止・解除を一�
   await page.getByLabel("この使われ方の説明（必須）").fill("編集者による通報処理を安全に確認するための説明です。");
   await page.locator('select[name="domainId"]').selectOption({ label: "IT" });
   await page.getByLabel("タグ（複数可）").fill("運用確認、分類テスト");
-  await page.getByLabel("日本語案（任意）").fill("運用確認訳");
-  await page.getByLabel("よく合う場面（任意）").fill("公開前の運用確認");
-  await page.getByLabel("元の言葉を使った文（任意）").fill("モデレーションE2Eを確認します。");
-  await page.getByLabel("日本語案に言い換えた文（任意）").fill("運用確認を行います。");
-  await page.getByRole("button", { name: "項目を作成" }).click();
+  await page.getByLabel("日本語案（必須）").fill("運用確認訳");
+  await page.getByLabel("よく合う場面").fill("公開前の運用確認");
+  await page.getByLabel("元の言葉を使った文").fill("モデレーションE2Eを確認します。");
+  await page.getByLabel("日本語案に言い換えた文").fill("運用確認を行います。");
+  await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.getByRole("link", { name: "IT", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "運用確認", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "分類テスト", exact: true })).toBeVisible();
@@ -221,9 +222,9 @@ test("改変された項目・意味・訳語案IDの組み合わせを拒否す
   await page.getByLabel("取り上げる言葉（必須）").fill("関連検証A");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("検証対象の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("使用例の関連先が一致することを検証します。");
-  await page.getByLabel("日本語案（任意）").fill("関連検証訳");
-  await page.getByLabel("よく合う場面（任意）").fill("関連性の検証");
-  await page.getByRole("button", { name: "項目を作成" }).click();
+  await page.getByLabel("日本語案（必須）").fill("関連検証訳");
+  await page.getByLabel("よく合う場面").fill("関連性の検証");
+  await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.locator(".proposal-card").filter({ hasText: "関連検証訳" })).toBeVisible();
   const firstTermUrl = page.url();
 
@@ -231,7 +232,8 @@ test("改変された項目・意味・訳語案IDの組み合わせを拒否す
   await page.getByLabel("取り上げる言葉（必須）").fill("関連検証B");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("別項目の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("最初の項目とは関連しない別の説明です。");
-  await page.getByRole("button", { name: "項目を作成" }).click();
+  await page.getByLabel("日本語案（必須）").fill("別の関連検証訳");
+  await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.getByRole("heading", { name: "関連検証B", exact: true })).toBeVisible();
   const secondTermId = await page.locator('input[name="termId"]').first().inputValue();
 

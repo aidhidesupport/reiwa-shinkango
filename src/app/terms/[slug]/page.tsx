@@ -196,7 +196,7 @@ export default async function TermPage({ params }: TermPageProps) {
                 ) : (
                   <Link href={`/login?returnTo=/terms/${term.slug}`} className="button secondary">
                     <Plus size={17} />
-                    <span>ログインして訳語案を追加</span>
+                    <span>ログインして日本語案を追加</span>
                   </Link>
                 )}
               </section>
@@ -218,7 +218,7 @@ export default async function TermPage({ params }: TermPageProps) {
           )}
           <div className="note-box">
             <strong>投稿の目安</strong>
-            <p>訳語案だけでなく、元文と言い換え文を添えると評価されやすくなります。</p>
+            <p>日本語案に元文と言い換え文を添えると、使いやすさを評価しやすくなります。</p>
           </div>
         </aside>
       </div>
