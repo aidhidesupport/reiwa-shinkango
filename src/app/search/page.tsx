@@ -5,6 +5,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { normalizeForSearch } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { compareTermSearchResults } from "@/lib/search";
+import { uniqueTagsFromSenses } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -33,15 +34,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             { originalWord: { contains: query.toLowerCase() } },
             { summary: { contains: query } },
             {
-              tags: {
-                some: {
-                  tag: {
-                    OR: [{ name: { contains: query } }, { slug: { contains: normalized } }],
-                  },
-                },
-              },
-            },
-            {
               examples: {
                 some: exampleWhere,
               },
@@ -52,6 +44,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   OR: [
                     { title: { contains: query } },
                     { description: { contains: query } },
+                    {
+                      tags: {
+                        some: {
+                          tag: {
+                            OR: [{ name: { contains: query } }, { slug: { contains: normalized } }],
+                          },
+                        },
+                      },
+                    },
                     {
                       domain: {
                         is: {
@@ -74,7 +75,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           ],
         },
         include: {
-          tags: { include: { tag: true } },
           examples: {
             take: 2,
             where: exampleWhere,
@@ -83,6 +83,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           senses: {
             include: {
               domain: true,
+              tags: { include: { tag: true } },
               proposals: {
                 take: 3,
                 where: { status: { not: "hidden" } },
@@ -119,6 +120,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
       <div className="search-results">
         {[...terms].sort(compareTermSearchResults(query)).map((term) => {
+          const tags = uniqueTagsFromSenses(term.senses);
           const matchedExamples = [
             ...term.examples,
             ...term.senses.flatMap((sense) => sense.examples),
@@ -129,7 +131,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <h2>{term.headword}</h2>
                 <p>{term.summary}</p>
                 <div className="tag-row">
-                  {term.tags.map(({ tag }) => (
+                  {tags.map((tag) => (
                     <span key={tag.id}>{tag.name}</span>
                   ))}
                 </div>

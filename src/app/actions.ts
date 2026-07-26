@@ -28,6 +28,38 @@ function optionalText(formData: FormData, name: string) {
   return value.length > 0 ? value : undefined;
 }
 
+const tagListSchema = z
+  .array(z.string().trim().min(1).max(80))
+  .max(20, "タグは20個以内にしてください。");
+
+function tagNamesFromForm(formData: FormData) {
+  const uniqueTags = new Map<string, string>();
+  for (const name of text(formData, "tags").split(/[,\s、]+/)) {
+    const trimmed = name.trim();
+    if (trimmed) uniqueTags.set(normalizeForSearch(trimmed), trimmed);
+  }
+  return tagListSchema.parse([...uniqueTags.values()]);
+}
+
+async function replaceSenseTags(
+  tx: Prisma.TransactionClient,
+  senseId: string,
+  tagNames: string[],
+) {
+  await tx.senseTag.deleteMany({ where: { senseId } });
+  for (const name of tagNames) {
+    const slug = normalizeForSearch(name);
+    const tag = await tx.tag.upsert({
+      where: { slug },
+      update: {},
+      create: { slug, name },
+    });
+    await tx.senseTag.create({
+      data: { senseId, tagId: tag.id },
+    });
+  }
+}
+
 function safePath(value: string, fallback: string) {
   const safeValue = value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") ? value : fallback;
   try {
@@ -357,10 +389,7 @@ export async function createTerm(formData: FormData) {
   const originalSentence = optionalText(formData, "originalSentence");
   const rewrittenSentence = optionalText(formData, "rewrittenSentence");
   const slug = await uniqueSlug(parsed.headword);
-  const tagNames = text(formData, "tags")
-    .split(/[,\s、]+/)
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+  const tagNames = tagNamesFromForm(formData);
 
   const term = await prisma.$transaction(async (tx) => {
     const createdTerm = await tx.term.create({
@@ -374,23 +403,6 @@ export async function createTerm(formData: FormData) {
       },
     });
 
-    for (const tagName of tagNames) {
-      const tag = await tx.tag.upsert({
-        where: { slug: normalizeForSearch(tagName) },
-        update: {},
-        create: {
-          slug: normalizeForSearch(tagName),
-          name: tagName,
-        },
-      });
-      await tx.termTag.create({
-        data: {
-          termId: createdTerm.id,
-          tagId: tag.id,
-        },
-      });
-    }
-
     const sense = await tx.sense.create({
       data: {
         termId: createdTerm.id,
@@ -400,6 +412,7 @@ export async function createTerm(formData: FormData) {
         createdById: user.id,
       },
     });
+    await replaceSenseTags(tx, sense.id, tagNames);
 
     if (proposalText) {
       const proposal = await tx.translationProposal.create({
@@ -437,6 +450,8 @@ export async function createTerm(formData: FormData) {
           headword: parsed.headword,
           summary: parsed.senseDescription,
           firstSense: parsed.senseTitle,
+          firstSenseDomainId: domainId,
+          firstSenseTags: tagNames,
         }),
         reason: "項目を新規作成",
         createdById: user.id,
@@ -458,30 +473,33 @@ export async function addSense(formData: FormData) {
   const title = text(formData, "title");
   const description = text(formData, "description");
   const domainId = optionalText(formData, "domainId");
+  const tagNames = tagNamesFromForm(formData);
 
   if (!termId || !title || !description) {
     throw new Error("使われ方の名前と説明は必須です。");
   }
   await requireTermTarget(termId, termSlug);
 
-  const sense = await prisma.sense.create({
-    data: {
-      termId,
-      domainId,
-      title,
-      description,
-      createdById: user.id,
-    },
-  });
-
-  await prisma.revision.create({
-    data: {
-      entityType: "sense",
-      entityId: sense.id,
-      afterJson: JSON.stringify({ title, description }),
-      reason: "意味を追加",
-      createdById: user.id,
-    },
+  await prisma.$transaction(async (tx) => {
+    const createdSense = await tx.sense.create({
+      data: {
+        termId,
+        domainId,
+        title,
+        description,
+        createdById: user.id,
+      },
+    });
+    await replaceSenseTags(tx, createdSense.id, tagNames);
+    await tx.revision.create({
+      data: {
+        entityType: "sense",
+        entityId: createdSense.id,
+        afterJson: JSON.stringify({ title, description, domainId, tags: tagNames }),
+        reason: "使われ方を追加",
+        createdById: user.id,
+      },
+    });
   });
 
   revalidatePath(`/terms/${termSlug}`);
@@ -923,6 +941,7 @@ const senseEditSchema = z.object({
   description: z.string().trim().min(8, "使われ方の説明は8文字以上で入力してください。").max(2000),
   usageNote: z.string().trim().max(1000).nullable(),
   domainId: z.string().trim().max(100).nullable(),
+  tags: tagListSchema.optional(),
 });
 
 const proposalEditSchema = z.object({
@@ -955,6 +974,7 @@ function editPayloadFromForm(targetType: EditableTargetType, formData: FormData)
       description: text(formData, "description"),
       usageNote: nullableFormText(formData, "usageNote"),
       domainId: nullableFormText(formData, "domainId"),
+      tags: tagNamesFromForm(formData),
     });
   }
   if (targetType === "proposal") {
@@ -1001,12 +1021,22 @@ async function applyEditableChange(
   partial = false,
 ) {
   if (targetType === "sense") {
-    const before = await tx.sense.findUnique({ where: { id: targetId } });
+    const before = await tx.sense.findUnique({
+      where: { id: targetId },
+      include: { tags: { include: { tag: true } } },
+    });
     if (!before) throw new Error("修正対象の意味が見つかりません。");
-    const payload = cleanObject(
-      partial ? senseEditSchema.partial().parse(rawPayload) : senseEditSchema.parse(rawPayload),
-    );
-    const after = await tx.sense.update({ where: { id: targetId }, data: payload });
+    const parsed = partial ? senseEditSchema.partial().parse(rawPayload) : senseEditSchema.parse(rawPayload);
+    const { tags, ...senseFields } = parsed;
+    const payload = cleanObject(senseFields);
+    await tx.sense.update({ where: { id: targetId }, data: payload });
+    if (tags !== undefined) {
+      await replaceSenseTags(tx, targetId, tags);
+    }
+    const after = await tx.sense.findUniqueOrThrow({
+      where: { id: targetId },
+      include: { tags: { include: { tag: true } } },
+    });
     await tx.revision.create({
       data: {
         entityType: targetType,
@@ -1016,12 +1046,14 @@ async function applyEditableChange(
           description: before.description,
           usageNote: before.usageNote,
           domainId: before.domainId,
+          tags: before.tags.map(({ tag }) => tag.name),
         }),
         afterJson: JSON.stringify({
           title: after.title,
           description: after.description,
           usageNote: after.usageNote,
           domainId: after.domainId,
+          tags: after.tags.map(({ tag }) => tag.name),
         }),
         reason,
         createdById,

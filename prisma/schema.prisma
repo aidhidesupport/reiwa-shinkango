@@ -52,17 +52,17 @@ model Tag {
   name      String
   createdAt DateTime @default(now())
 
-  terms TermTag[]
+  senses SenseTag[]
 }
 
-model TermTag {
-  termId String
-  tagId  String
+model SenseTag {
+  senseId String
+  tagId   String
 
-  term Term @relation(fields: [termId], references: [id])
-  tag  Tag  @relation(fields: [tagId], references: [id])
+  sense Sense @relation(fields: [senseId], references: [id])
+  tag   Tag   @relation(fields: [tagId], references: [id])
 
-  @@id([termId, tagId])
+  @@id([senseId, tagId])
 }
 
 model Term {
@@ -81,7 +81,6 @@ model Term {
   createdBy User           @relation("TermCreatedBy", fields: [createdById], references: [id])
   senses    Sense[]
   examples  UsageExample[]
-  tags      TermTag[]
 
   @@index([normalizedHeadword])
 }
@@ -104,6 +103,7 @@ model Sense {
   proposals       TranslationProposal[]
   examples        UsageExample[]
   recommendations Recommendation[]
+  tags            SenseTag[]
 }
 
 model TranslationProposal {

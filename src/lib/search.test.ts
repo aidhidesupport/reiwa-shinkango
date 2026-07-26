@@ -29,10 +29,10 @@ describe("term search scoring", () => {
       scoreTermSearchMatch(
         {
           headword: "オンボーディング",
-          tags: [{ tag: { name: "人材", slug: "人材" } }],
           senses: [
             {
               domain: { name: "人事", slug: "hr" },
+              tags: [{ tag: { name: "人材", slug: "人材" } }],
               proposals: [{ text: "受け入れ支援", fitContext: "新人研修" }],
               examples: [{ rewrittenSentence: "新入社員の受け入れ支援を改善する。" }],
             },

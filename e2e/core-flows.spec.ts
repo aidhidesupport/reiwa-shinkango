@@ -29,12 +29,14 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await page.getByLabel("元の外国語（任意）").fill("e2e word");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("最初の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("承認前に表示される最初の説明文です。");
+  await page.getByLabel("タグ（複数可）").fill("修正前タグ");
   await page.getByRole("button", { name: "項目を作成" }).click();
   await expect(page).toHaveURL(/\/terms\/e2e/);
 
   const editDetails = page.locator("details").filter({ has: page.getByText("使われ方の修正を提案", { exact: true }) }).first();
   await editDetails.locator("summary").click();
   await editDetails.getByLabel("この使われ方の説明").fill("編集者の承認後に表示される新しい説明文です。");
+  await editDetails.getByLabel("タグ（複数可）").fill("修正後タグ");
   await editDetails.getByLabel("修正理由").fill("説明をより具体的にするため");
   await editDetails.getByRole("button", { name: "修正を提案" }).click();
 
@@ -55,6 +57,7 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await page.goto("/search?q=E2Eワード");
   await page.getByRole("link", { name: /E2Eワード/ }).click();
   await expect(page.getByRole("paragraph").filter({ hasText: "編集者の承認後に表示される新しい説明文です。" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "修正後タグ", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "変更履歴" }).click();
   const approvedRevision = page.locator(".timeline-item").filter({ has: page.getByRole("heading", { name: /修正提案を承認/ }) });
   await expect(approvedRevision).toBeVisible();
@@ -64,6 +67,7 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await expect(page.getByRole("heading", { name: /変更を差し戻し/ }).first()).toBeVisible();
   await page.getByRole("link", { name: "E2Eワードへ戻る" }).click();
   await expect(page.getByRole("paragraph").filter({ hasText: "承認前に表示される最初の説明文です。" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "修正前タグ", exact: true })).toBeVisible();
 });
 
 test("プロフィール変更と管理者の一時パスワード発行が機能する", async ({ page }) => {
@@ -127,11 +131,16 @@ test("通報の非表示・処理・却下とユーザー停止・解除を一�
   await page.getByLabel("元の外国語（任意）").fill("moderation e2e");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("運用確認用の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("編集者による通報処理を安全に確認するための説明です。");
+  await page.locator('select[name="domainId"]').selectOption({ label: "IT" });
+  await page.getByLabel("タグ（複数可）").fill("運用確認、分類テスト");
   await page.getByLabel("日本語案（任意）").fill("運用確認訳");
   await page.getByLabel("よく合う場面（任意）").fill("公開前の運用確認");
   await page.getByLabel("元の言葉を使った文（任意）").fill("モデレーションE2Eを確認します。");
   await page.getByLabel("日本語案に言い換えた文（任意）").fill("運用確認を行います。");
   await page.getByRole("button", { name: "項目を作成" }).click();
+  await expect(page.getByRole("link", { name: "IT", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "運用確認", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "分類テスト", exact: true })).toBeVisible();
 
   const proposalCard = page.locator(".proposal-card").filter({ hasText: "運用確認訳" });
   const proposalReport = proposalCard.locator(":scope > details.report-details");

@@ -1101,6 +1101,41 @@ main {
   line-height: 1.6;
 }
 
+.classification-fields {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbf8f2;
+}
+
+.classification-fields legend {
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.classification-fields > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sense-classification {
+  margin-bottom: 8px;
+}
+
+.tag-row .domain-chip {
+  border-color: #9fcac2;
+  background: var(--accent-soft);
+  color: #16574f;
+}
+
 .example-form {
   border-top: 0;
 }

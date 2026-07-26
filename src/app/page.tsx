@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, MessageSquareText, Search, ShieldCheck } from "lucide-react";
 import { SearchBox } from "@/components/SearchBox";
 import { prisma } from "@/lib/prisma";
+import { uniqueTagsFromSenses } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,9 @@ export default async function HomePage() {
       take: 6,
       orderBy: { updatedAt: "desc" },
       include: {
-        tags: { include: { tag: true } },
         senses: {
-          take: 1,
           include: {
+            tags: { include: { tag: true } },
             proposals: {
               take: 2,
               where: { status: { in: ["recommended", "limited", "tentative"] } },
@@ -82,25 +82,28 @@ export default async function HomePage() {
           </div>
 
           <div className="term-list">
-            {recentTerms.map((term) => (
-              <Link key={term.id} href={`/terms/${term.slug}`} className="term-card">
-                <div className="term-card-head">
-                  <h3>{term.headword}</h3>
-                  {term.originalWord ? <span>{term.originalWord}</span> : null}
-                </div>
-                <p>{term.summary}</p>
-                <div className="tag-row">
-                  {term.tags.map(({ tag }) => (
-                    <span key={tag.id}>{tag.name}</span>
-                  ))}
-                </div>
-                <div className="mini-proposals">
-                  {term.senses.flatMap((sense) => sense.proposals).map((proposal) => (
-                    <span key={proposal.id}>{proposal.text}</span>
-                  ))}
-                </div>
-              </Link>
-            ))}
+            {recentTerms.map((term) => {
+              const tags = uniqueTagsFromSenses(term.senses);
+              return (
+                <Link key={term.id} href={`/terms/${term.slug}`} className="term-card">
+                  <div className="term-card-head">
+                    <h3>{term.headword}</h3>
+                    {term.originalWord ? <span>{term.originalWord}</span> : null}
+                  </div>
+                  <p>{term.summary}</p>
+                  <div className="tag-row">
+                    {tags.map((tag) => (
+                      <span key={tag.id}>{tag.name}</span>
+                    ))}
+                  </div>
+                  <div className="mini-proposals">
+                    {term.senses.flatMap((sense) => sense.proposals).map((proposal) => (
+                      <span key={proposal.id}>{proposal.text}</span>
+                    ))}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
 

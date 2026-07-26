@@ -14,12 +14,6 @@ export type SearchableTerm = {
   originalWord?: SearchText;
   summary?: SearchText;
   updatedAt?: Date | string | null;
-  tags?: Array<{
-    tag: {
-      name: string;
-      slug?: SearchText;
-    };
-  }>;
   examples?: SearchableExample[];
   senses?: Array<{
     title?: SearchText;
@@ -28,6 +22,12 @@ export type SearchableTerm = {
       name?: SearchText;
       slug?: SearchText;
     } | null;
+    tags?: Array<{
+      tag: {
+        name: string;
+        slug?: SearchText;
+      };
+    }>;
     proposals?: Array<{
       text?: SearchText;
       fitContext?: SearchText;
@@ -65,11 +65,6 @@ export function scoreTermSearchMatch(term: SearchableTerm, rawQuery: string) {
   if (normalizedIncludes(term.originalWord, query)) keep(720);
   if (normalizedIncludes(term.summary, query)) keep(360);
 
-  for (const { tag } of term.tags ?? []) {
-    if (normalizedEquals(tag.name, query) || normalizedEquals(tag.slug, query)) keep(680);
-    if (normalizedIncludes(tag.name, query) || normalizedIncludes(tag.slug, query)) keep(520);
-  }
-
   for (const example of term.examples ?? []) {
     if (normalizedIncludes(example.originalSentence, query) || normalizedIncludes(example.rewrittenSentence, query)) {
       keep(460);
@@ -78,6 +73,10 @@ export function scoreTermSearchMatch(term: SearchableTerm, rawQuery: string) {
   }
 
   for (const sense of term.senses ?? []) {
+    for (const { tag } of sense.tags ?? []) {
+      if (normalizedEquals(tag.name, query) || normalizedEquals(tag.slug, query)) keep(680);
+      if (normalizedIncludes(tag.name, query) || normalizedIncludes(tag.slug, query)) keep(520);
+    }
     if (normalizedEquals(sense.domain?.name, query) || normalizedEquals(sense.domain?.slug, query)) keep(640);
     if (normalizedIncludes(sense.domain?.name, query) || normalizedIncludes(sense.domain?.slug, query)) keep(500);
     if (normalizedIncludes(sense.title, query)) keep(440);
@@ -106,4 +105,3 @@ export function compareTermSearchResults(rawQuery: string) {
     return scoreDiff || newestFirst(a, b) || a.headword.localeCompare(b.headword, "ja");
   };
 }
-

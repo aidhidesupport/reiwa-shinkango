@@ -693,15 +693,6 @@ async function main() {
         originalWord: termSeed.originalWord,
         summary: termSeed.summary,
         createdById: editor.id,
-        tags: {
-          create: termSeed.tags.map((tagName) => ({
-            tag: {
-              connect: {
-                id: tagMap.get(tagName),
-              },
-            },
-          })),
-        },
       },
     });
 
@@ -724,6 +715,15 @@ async function main() {
           description: senseSeed.description,
           order: senseIndex,
           createdById: editor.id,
+          tags: {
+            create: termSeed.tags.map((tagName) => ({
+              tag: {
+                connect: {
+                  id: tagMap.get(tagName),
+                },
+              },
+            })),
+          },
         },
       });
 

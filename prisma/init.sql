@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS "Comment";
 DROP TABLE IF EXISTS "Evaluation";
 DROP TABLE IF EXISTS "UsageExample";
 DROP TABLE IF EXISTS "TranslationProposal";
+DROP TABLE IF EXISTS "SenseTag";
 DROP TABLE IF EXISTS "Sense";
 DROP TABLE IF EXISTS "TermTag";
 DROP TABLE IF EXISTS "Term";
@@ -75,14 +76,6 @@ CREATE TABLE "Term" (
 CREATE UNIQUE INDEX "Term_slug_key" ON "Term"("slug");
 CREATE INDEX "Term_normalizedHeadword_idx" ON "Term"("normalizedHeadword");
 
-CREATE TABLE "TermTag" (
-  "termId" TEXT NOT NULL,
-  "tagId" TEXT NOT NULL,
-  PRIMARY KEY ("termId", "tagId"),
-  CONSTRAINT "TermTag_termId_fkey" FOREIGN KEY ("termId") REFERENCES "Term"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "TermTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
 CREATE TABLE "Sense" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "termId" TEXT NOT NULL,
@@ -97,6 +90,14 @@ CREATE TABLE "Sense" (
   CONSTRAINT "Sense_termId_fkey" FOREIGN KEY ("termId") REFERENCES "Term"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "Sense_domainId_fkey" FOREIGN KEY ("domainId") REFERENCES "Domain"("id") ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT "Sense_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "SenseTag" (
+  "senseId" TEXT NOT NULL,
+  "tagId" TEXT NOT NULL,
+  PRIMARY KEY ("senseId", "tagId"),
+  CONSTRAINT "SenseTag_senseId_fkey" FOREIGN KEY ("senseId") REFERENCES "Sense"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "SenseTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE TABLE "TranslationProposal" (

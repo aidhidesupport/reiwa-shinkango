@@ -34,11 +34,11 @@ export default async function TermPage({ params }: TermPageProps) {
       where: { slug },
       include: {
         createdBy: true,
-        tags: { include: { tag: true } },
         senses: {
           orderBy: { order: "asc" },
           include: {
             domain: true,
+            tags: { include: { tag: true } },
             recommendations: {
               include: {
                 proposal: true,
@@ -82,14 +82,6 @@ export default async function TermPage({ params }: TermPageProps) {
             {term.originalWord ? <span>{term.originalWord}</span> : null}
           </div>
           {summaryRepeatsSense ? null : <p>{term.summary}</p>}
-          <div className="tag-row">
-            {term.tags.map(({ tag }) => (
-              <Link key={tag.id} href={`/search?q=${encodeURIComponent(tag.name)}`}>
-                <Tag size={14} />
-                {tag.name}
-              </Link>
-            ))}
-          </div>
         </div>
         <div className="term-meta">
           <span>
@@ -156,7 +148,21 @@ export default async function TermPage({ params }: TermPageProps) {
               <section key={sense.id} id={`sense-${sense.id}`} className="sense-section">
                 <div className="section-heading">
                   <div>
-                    <p className="eyebrow">{sense.domain?.name ?? "未分類"}</p>
+                    <div className="tag-row sense-classification" aria-label="分類">
+                      {sense.domain ? (
+                        <Link className="domain-chip" href={`/domains/${sense.domain.slug}`}>
+                          {sense.domain.name}
+                        </Link>
+                      ) : (
+                        <span className="domain-chip">未分類</span>
+                      )}
+                      {sense.tags.map(({ tag }) => (
+                        <Link key={tag.id} href={`/search?q=${encodeURIComponent(tag.name)}`}>
+                          <Tag size={14} />
+                          {tag.name}
+                        </Link>
+                      ))}
+                    </div>
                     <h2>{sense.title}</h2>
                   </div>
                 </div>

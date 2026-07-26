@@ -27,6 +27,7 @@ const suggestionFieldLabels: Record<string, string> = {
   description: "説明",
   usageNote: "用法メモ",
   domainId: "分野ID",
+  tags: "タグ",
   text: "訳語案",
   fitContext: "合う文脈",
   unfitContext: "避けたい文脈",

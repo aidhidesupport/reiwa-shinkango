@@ -41,10 +41,6 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
           元の外国語（任意）
           <input name="originalWord" placeholder="例：accountability" />
         </label>
-        <label>
-          タグ（任意）
-          <input name="tags" placeholder="例：会議、企画、行政" />
-        </label>
       </section>
 
       <section className="form-step" aria-labelledby="term-step-sense">
@@ -69,15 +65,25 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
             placeholder="例：判断や行動の内容と理由を、関係者に説明する責任を指します。"
           />
         </label>
-        <label>
-          この使われ方の分野（任意）
-          <select name="domainId" defaultValue="">
-            <option value="">未分類</option>
-            {domains.map((domain) => (
-              <option key={domain.id} value={domain.id}>{domain.name}</option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="classification-fields">
+          <legend>分類（任意）</legend>
+          <p>大まかな分野を選び、必要なら自由なタグを付けられます。両方空でも投稿できます。</p>
+          <div className="form-grid">
+            <label>
+              分野
+              <select name="domainId" defaultValue="">
+                <option value="">未分類</option>
+                {domains.map((domain) => (
+                  <option key={domain.id} value={domain.id}>{domain.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              タグ（複数可）
+              <input name="tags" placeholder="例：会議、組織運営、説明責任" />
+            </label>
+          </div>
+        </fieldset>
       </section>
 
       <section className="form-step" aria-labelledby="term-step-proposal">
@@ -144,15 +150,24 @@ export function AddSenseForm({ termId, termSlug, domains }: { termId: string; te
           この使われ方の説明
           <textarea name="description" required minLength={8} rows={3} />
         </label>
-        <label>
-          分野
-          <select name="domainId" defaultValue="">
-            <option value="">未分類</option>
-            {domains.map((domain) => (
-              <option key={domain.id} value={domain.id}>{domain.name}</option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="classification-fields">
+          <legend>分類（任意）</legend>
+          <div className="form-grid">
+            <label>
+              分野
+              <select name="domainId" defaultValue="">
+                <option value="">未分類</option>
+                {domains.map((domain) => (
+                  <option key={domain.id} value={domain.id}>{domain.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              タグ（複数可）
+              <input name="tags" placeholder="例：会議、組織運営" />
+            </label>
+          </div>
+        </fieldset>
         <button type="submit" className="button secondary">
           <Plus size={17} />
           <span>追加</span>
@@ -245,6 +260,7 @@ export function EditSenseForm({
     description: string;
     usageNote: string | null;
     domainId: string | null;
+    tags: Array<{ tag: { name: string } }>;
   };
   termSlug: string;
   domains: Domain[];
@@ -273,15 +289,24 @@ export function EditSenseForm({
           用法メモ
           <textarea name="usageNote" rows={2} defaultValue={sense.usageNote ?? ""} />
         </label>
-        <label>
-          分野
-          <select name="domainId" defaultValue={sense.domainId ?? ""}>
-            <option value="">未分類</option>
-            {domains.map((domain) => (
-              <option key={domain.id} value={domain.id}>{domain.name}</option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="classification-fields">
+          <legend>分類（任意）</legend>
+          <div className="form-grid">
+            <label>
+              分野
+              <select name="domainId" defaultValue={sense.domainId ?? ""}>
+                <option value="">未分類</option>
+                {domains.map((domain) => (
+                  <option key={domain.id} value={domain.id}>{domain.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              タグ（複数可）
+              <input name="tags" defaultValue={sense.tags.map(({ tag }) => tag.name).join("、")} />
+            </label>
+          </div>
+        </fieldset>
         <label>
           修正理由
           <textarea name="reason" required minLength={5} rows={2} placeholder="どこを、なぜ直すか" />
