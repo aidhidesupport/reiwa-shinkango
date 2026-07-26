@@ -1,0 +1,2 @@
+ALTER TABLE "UsageExample" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE "Comment" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'active';

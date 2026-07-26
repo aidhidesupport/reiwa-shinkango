@@ -15,11 +15,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
     },
     {
       url: `${baseUrl}/rules`,
-      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/rules/classification`,
+    },
+    {
+      url: `${baseUrl}/rules/permissions`,
+    },
+    {
+      url: `${baseUrl}/legal/terms`,
+    },
+    {
+      url: `${baseUrl}/legal/privacy`,
     },
     ...terms.map((term) => ({
       url: `${baseUrl}/terms/${term.slug}`,

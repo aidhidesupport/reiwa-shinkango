@@ -9,6 +9,7 @@ prisma/dev.db
 prisma/dev.db-journal
 prisma/e2e.db
 prisma/e2e.db-journal
+prisma/e2e-mailbox.jsonl
 prisma/schema.postgres.prisma
 backups
 *.tsbuildinfo

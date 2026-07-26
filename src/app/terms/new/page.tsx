@@ -26,10 +26,15 @@ export default async function NewTermPage({ searchParams }: NewTermPageProps) {
     normalizedHeadword
       ? prisma.term.findMany({
           where: {
-            OR: [
-              { headword: { contains: defaultHeadword } },
-              { normalizedHeadword: { contains: normalizedHeadword } },
-              { originalWord: { contains: defaultHeadword.toLowerCase() } },
+            AND: [
+              { status: "published" },
+              {
+                OR: [
+                  { headword: { contains: defaultHeadword } },
+                  { normalizedHeadword: { contains: normalizedHeadword } },
+                  { originalWord: { contains: defaultHeadword.toLowerCase() } },
+                ],
+              },
             ],
           },
           take: 5,
@@ -60,12 +65,19 @@ export default async function NewTermPage({ searchParams }: NewTermPageProps) {
         </section>
       ) : null}
 
-      {currentUser ? (
+      {currentUser?.emailVerifiedAt ? (
         <NewTermForm domains={domains} defaultHeadword={defaultHeadword} />
+      ) : currentUser ? (
+        <EmptyState
+          title="投稿の前にメールアドレスを確認してください"
+          body="確認メールはアカウント画面から再送できます。確認後に、日本語案の投稿、評価、コメントへ参加できます。"
+          actionLabel="アカウント画面へ"
+          actionHref="/account"
+        />
       ) : (
         <EmptyState
           title="投稿にはログインが必要です"
-          body="閲覧は誰でもできます。項目作成、訳語案、評価、コメントにはアカウントを使います。"
+          body="閲覧は誰でもできます。項目作成、日本語案、評価、コメントにはアカウントを使います。"
           actionLabel="ログイン・登録"
           actionHref="/login?returnTo=/terms/new"
         />

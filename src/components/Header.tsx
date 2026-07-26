@@ -1,17 +1,20 @@
 import Link from "next/link";
-import { BookOpen, LayoutDashboard, LogIn, LogOut, Plus, ScrollText, Search, Shield } from "lucide-react";
+import { Bell, BookOpen, LayoutDashboard, LogIn, LogOut, Plus, ScrollText, Search, Shield } from "lucide-react";
 import { signOut } from "@/app/actions";
-import { canAdmin, canModerate, getCurrentUser } from "@/lib/session";
-
-const roles: Record<string, string> = {
-  admin: "管理者",
-  editor: "編集者",
-  trusted: "信頼ユーザー",
-  user: "利用者",
-};
+import { roleLabel } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+import { canAccessDashboard, canAdmin, getCurrentUser } from "@/lib/session";
 
 export async function Header() {
   const currentUser = await getCurrentUser();
+  const unreadNotificationCount = currentUser
+    ? await prisma.notification.count({
+        where: {
+          userId: currentUser.id,
+          readAt: null,
+        },
+      })
+    : 0;
 
   return (
     <header className="site-header">
@@ -23,7 +26,7 @@ export async function Header() {
 
         <form action="/search" className="header-search">
           <Search size={17} aria-hidden="true" />
-          <input name="q" placeholder="横文字・訳語を検索" />
+          <input name="q" placeholder="横文字・日本語案を検索" />
         </form>
 
         <nav className="header-nav" aria-label="主要導線">
@@ -35,7 +38,20 @@ export async function Header() {
             <Plus size={17} />
             <span>投稿</span>
           </Link>
-          {currentUser && canModerate(currentUser.role) ? (
+          {currentUser ? (
+            <Link
+              href="/notifications"
+              className="icon-link notification-link"
+              aria-label={`通知${unreadNotificationCount > 0 ? `、未読${unreadNotificationCount}件` : ""}`}
+            >
+              <Bell size={17} />
+              <span>通知</span>
+              {unreadNotificationCount > 0 ? (
+                <strong>{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</strong>
+              ) : null}
+            </Link>
+          ) : null}
+          {currentUser && canAccessDashboard(currentUser.role) ? (
             <Link href="/dashboard" className="icon-link">
               <LayoutDashboard size={17} />
               <span>整理</span>
@@ -51,8 +67,8 @@ export async function Header() {
 
         {currentUser ? (
           <div className="user-switcher">
-            <span className="role-pill">{roles[currentUser.role] ?? "利用者"}</span>
-            <Link href="/account" className="user-name">{currentUser.displayName}</Link>
+            <span className="role-pill">{roleLabel(currentUser.role)}</span>
+            <Link href="/my" className="user-name">{currentUser.displayName}</Link>
             <form action={signOut}>
               <button type="submit" aria-label="ログアウト">
                 <LogOut size={16} />

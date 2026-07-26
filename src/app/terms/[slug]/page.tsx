@@ -1,17 +1,19 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { AlertTriangle, Clock3, History, Plus, Tag } from "lucide-react";
 import { reportTermWithState } from "@/app/actions";
 import { ActionForm } from "@/components/ActionForm";
 import { AddProposalForm, AddSenseForm, EditSenseForm } from "@/components/TermForms";
 import { ProposalCard } from "@/components/ProposalCard";
-import { canEditRecommendations, canModerate, getCurrentUser } from "@/lib/session";
+import { RecommendationWorkbench } from "@/components/RecommendationWorkbench";
+import { canEditContent, canEditRecommendations, canModerate, getCurrentUser } from "@/lib/session";
 import { sortedByProposalScore } from "@/lib/scoring";
 import { prisma } from "@/lib/prisma";
 import { decodePathSegment } from "@/lib/routing";
 
 type TermPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ merged?: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -20,14 +22,52 @@ export async function generateMetadata({ params }: TermPageProps) {
   const rawParams = await params;
   const slug = decodePathSegment(rawParams.slug);
   const term = await prisma.term.findUnique({ where: { slug } });
+  if (!term) {
+    const termRedirect = await prisma.termRedirect.findUnique({
+      where: { sourceSlug: slug },
+      include: { targetTerm: true },
+    });
+    if (termRedirect) {
+      return {
+        title: `${termRedirect.targetTerm.headword}の日本語案・言い換え`,
+        description: termRedirect.targetTerm.summary,
+        alternates: {
+          canonical: `/terms/${termRedirect.targetTerm.slug}`,
+        },
+        openGraph: {
+          type: "article",
+          locale: "ja_JP",
+          siteName: "令和新漢語",
+          title: `${termRedirect.targetTerm.headword}の日本語案・言い換え`,
+          description: termRedirect.targetTerm.summary,
+          url: `/terms/${termRedirect.targetTerm.slug}`,
+        },
+      };
+    }
+  }
   return {
-    title: term ? `${term.headword}の日本語訳・言い換え` : "項目",
-    description: term?.summary,
+    title: term?.status === "published" ? `${term.headword}の日本語案・言い換え` : "項目",
+    description: term?.status === "published" ? term.summary : undefined,
+    alternates: term?.status === "published" ? {
+      canonical: `/terms/${term.slug}`,
+    } : undefined,
+    openGraph: term?.status === "published" ? {
+      type: "article",
+      locale: "ja_JP",
+      siteName: "令和新漢語",
+      title: `${term.headword}の日本語案・言い換え`,
+      description: term.summary,
+      url: `/terms/${term.slug}`,
+    } : undefined,
+    robots: term?.status === "published" ? undefined : {
+      index: false,
+      follow: false,
+    },
   };
 }
 
-export default async function TermPage({ params }: TermPageProps) {
-  const rawParams = await params;
+export default async function TermPage({ params, searchParams }: TermPageProps) {
+  const [rawParams, query] = await Promise.all([params, searchParams]);
   const slug = decodePathSegment(rawParams.slug);
   const [term, domains, currentUser] = await Promise.all([
     prisma.term.findUnique({
@@ -40,6 +80,9 @@ export default async function TermPage({ params }: TermPageProps) {
             domain: true,
             tags: { include: { tag: true } },
             recommendations: {
+              where: {
+                proposal: { status: { not: "hidden" } },
+              },
               include: {
                 proposal: true,
               },
@@ -67,14 +110,38 @@ export default async function TermPage({ params }: TermPageProps) {
     getCurrentUser(),
   ]);
 
-  if (!term) notFound();
+  if (!term) {
+    const termRedirect = await prisma.termRedirect.findUnique({
+      where: { sourceSlug: slug },
+      include: { targetTerm: { select: { slug: true } } },
+    });
+    if (termRedirect) {
+      permanentRedirect(`/terms/${encodeURIComponent(termRedirect.targetTerm.slug)}`);
+    }
+    notFound();
+  }
   const canSeeHidden = currentUser ? canModerate(currentUser.role) : false;
+  if (term.status !== "published" && !canSeeHidden) {
+    notFound();
+  }
+  const participatingUser = currentUser?.emailVerifiedAt ? currentUser : null;
   const summaryRepeatsSense = term.senses.some(
     (sense) => sense.description.trim() === term.summary.trim(),
   );
 
   return (
     <div className="page-shell">
+      {query.merged ? (
+        <p className="notice success">重複項目を統合しました。使われ方、日本語案、使用例、関連履歴をこの項目へ移しました。</p>
+      ) : null}
+      {term.status === "hidden" ? (
+        <p className="notice warning">この項目は非公開中です。編集者だけが内容を確認できます。</p>
+      ) : null}
+      {currentUser && !currentUser.emailVerifiedAt ? (
+        <p className="notice warning">
+          投稿、評価、コメントへ参加するには、<Link href="/account">メールアドレスを確認</Link>してください。
+        </p>
+      ) : null}
       <section className="term-hero">
         <div>
           <div className="term-title-line">
@@ -92,7 +159,7 @@ export default async function TermPage({ params }: TermPageProps) {
             <History size={15} />
             変更履歴
           </Link>
-          {currentUser ? (
+          {participatingUser ? (
             <details className="report-details term-report">
               <summary>
                 <AlertTriangle size={15} />
@@ -117,7 +184,7 @@ export default async function TermPage({ params }: TermPageProps) {
       </section>
 
       <section className="recommendation-summary">
-        <h2>文脈別推奨</h2>
+        <h2>編集部の推奨日本語案</h2>
         <div className="recommendation-grid">
           {term.senses.flatMap((sense) =>
             sense.recommendations.map((recommendation) => (
@@ -133,7 +200,7 @@ export default async function TermPage({ params }: TermPageProps) {
             )),
           )}
           {term.senses.every((sense) => sense.recommendations.length === 0) ? (
-            <p className="muted">推奨訳はまだ設定されていません。</p>
+            <p className="muted">推奨する日本語案はまだ整理中です。各カードの合う場面や言い換え例を参考に比較してください。</p>
           ) : null}
         </div>
       </section>
@@ -142,7 +209,16 @@ export default async function TermPage({ params }: TermPageProps) {
         <section className="sense-list">
           {term.senses.map((sense) => {
             const proposals = sortedByProposalScore(
-              canSeeHidden ? sense.proposals : sense.proposals.filter((proposal) => proposal.status !== "hidden"),
+              (canSeeHidden ? sense.proposals : sense.proposals.filter((proposal) => proposal.status !== "hidden"))
+                .map((proposal) => ({
+                  ...proposal,
+                  examples: canSeeHidden
+                    ? proposal.examples
+                    : proposal.examples.filter((example) => example.status !== "hidden"),
+                  comments: canSeeHidden
+                    ? proposal.comments
+                    : proposal.comments.filter((comment) => comment.status !== "hidden"),
+                })),
             );
             return (
               <section key={sense.id} id={`sense-${sense.id}`} className="sense-section">
@@ -169,34 +245,62 @@ export default async function TermPage({ params }: TermPageProps) {
                 <p>{sense.description}</p>
                 {sense.usageNote ? <p className="muted">用法メモ: {sense.usageNote}</p> : null}
 
-                {currentUser ? (
+                {participatingUser ? (
                   <EditSenseForm
                     sense={sense}
                     termSlug={term.slug}
                     domains={domains}
-                    canApplyNow={canEditRecommendations(currentUser.role)}
+                    canApplyNow={canEditContent(participatingUser.role)}
                   />
                 ) : null}
 
-                <div className="proposal-list">
-                  {proposals.map((proposal) => (
-                    <ProposalCard
-                      key={proposal.id}
-                      termId={term.id}
-                      termSlug={term.slug}
-                      senseId={sense.id}
-                      proposal={proposal}
-                      currentUser={currentUser}
-                    />
-                  ))}
+                <div className="proposal-list-heading">
+                  <div>
+                    <p className="eyebrow">日本語案</p>
+                    <h3>{proposals.length}案を比較</h3>
+                  </div>
+                  {proposals.length > 1 ? <p>評価と使用例をもとに、参考スコア順で表示しています。</p> : null}
                 </div>
 
-                {currentUser ? (
+                {participatingUser && canEditRecommendations(participatingUser.role) ? (
+                  <RecommendationWorkbench
+                    senseId={sense.id}
+                    termSlug={term.slug}
+                    proposals={proposals.filter((proposal) => proposal.status !== "hidden")}
+                  />
+                ) : null}
+
+                {proposals.length > 0 ? (
+                  <div className="proposal-list">
+                    {proposals.map((proposal) => (
+                      <ProposalCard
+                        key={proposal.id}
+                        termId={term.id}
+                        termSlug={term.slug}
+                        senseId={sense.id}
+                        proposal={proposal}
+                        currentUser={currentUser}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="proposal-empty">
+                    <strong>この使われ方に合う日本語案は、まだありません。</strong>
+                    <p>
+                      実際に言い換えとして使える短い案を、合う場面や理由と一緒に追加できます。
+                    </p>
+                  </div>
+                )}
+
+                {participatingUser ? (
                   <AddProposalForm termId={term.id} termSlug={term.slug} senseId={sense.id} />
                 ) : (
-                  <Link href={`/login?returnTo=/terms/${term.slug}`} className="button secondary">
+                  <Link
+                    href={currentUser ? "/account" : `/login?returnTo=/terms/${term.slug}`}
+                    className="button secondary"
+                  >
                     <Plus size={17} />
-                    <span>ログインして日本語案を追加</span>
+                    <span>{currentUser ? "メール確認後に日本語案を追加" : "ログインして日本語案を追加"}</span>
                   </Link>
                 )}
               </section>
@@ -209,11 +313,11 @@ export default async function TermPage({ params }: TermPageProps) {
             <Plus size={18} />
             項目を育てる
           </h2>
-          {currentUser ? (
+          {participatingUser ? (
             <AddSenseForm termId={term.id} termSlug={term.slug} domains={domains} />
           ) : (
-            <Link href={`/login?returnTo=/terms/${term.slug}`} className="text-link">
-              ログインして編集に参加
+            <Link href={currentUser ? "/account" : `/login?returnTo=/terms/${term.slug}`} className="text-link">
+              {currentUser ? "メール確認後に編集へ参加" : "ログインして編集に参加"}
             </Link>
           )}
           <div className="note-box">

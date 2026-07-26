@@ -14,9 +14,13 @@ export default async function DomainPage({ params }: DomainPageProps) {
     where: { slug },
     include: {
       senses: {
+        where: {
+          term: { status: "published" },
+        },
         include: {
           term: true,
           proposals: {
+            where: { status: { not: "hidden" } },
             take: 3,
             orderBy: { updatedAt: "desc" },
           },

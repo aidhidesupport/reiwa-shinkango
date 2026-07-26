@@ -4,15 +4,19 @@ import { signInWithState, signUpWithState } from "@/app/actions";
 import { ActionForm } from "@/components/ActionForm";
 
 type LoginPageProps = {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; passwordReset?: string }>;
 };
 
 export const metadata = {
   title: "ログイン",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { returnTo = "/" } = await searchParams;
+  const { returnTo = "/", passwordReset } = await searchParams;
 
   return (
     <div className="page-shell narrow">
@@ -21,6 +25,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <h1>ログイン・登録</h1>
         <p>閲覧は誰でもできます。投稿、評価、コメントにはログインが必要です。</p>
       </section>
+
+      {passwordReset ? (
+        <p className="notice success">パスワードを変更しました。新しいパスワードでログインしてください。</p>
+      ) : null}
 
       <section className="auth-grid">
         <ActionForm action={signInWithState} className="stacked-form" pendingMessage="ログインしています…">
@@ -41,6 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <LogIn size={17} />
             <span>ログイン</span>
           </button>
+          <Link href="/forgot-password" className="text-link">パスワードを忘れた方</Link>
         </ActionForm>
 
         <ActionForm action={signUpWithState} className="stacked-form" pendingMessage="アカウントを作成しています…">

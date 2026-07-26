@@ -1,6 +1,10 @@
 PRAGMA foreign_keys = OFF;
 
 DROP TABLE IF EXISTS "RateLimitBucket";
+DROP TABLE IF EXISTS "Notification";
+DROP TABLE IF EXISTS "AccountDeletionRequest";
+DROP TABLE IF EXISTS "EmailVerificationToken";
+DROP TABLE IF EXISTS "PasswordResetToken";
 DROP TABLE IF EXISTS "EditSuggestion";
 DROP TABLE IF EXISTS "Report";
 DROP TABLE IF EXISTS "Revision";
@@ -11,6 +15,7 @@ DROP TABLE IF EXISTS "UsageExample";
 DROP TABLE IF EXISTS "TranslationProposal";
 DROP TABLE IF EXISTS "SenseTag";
 DROP TABLE IF EXISTS "Sense";
+DROP TABLE IF EXISTS "TermRedirect";
 DROP TABLE IF EXISTS "TermTag";
 DROP TABLE IF EXISTS "Term";
 DROP TABLE IF EXISTS "Tag";
@@ -24,6 +29,7 @@ CREATE TABLE "User" (
   "displayName" TEXT NOT NULL,
   "handle" TEXT NOT NULL,
   "email" TEXT,
+  "emailVerifiedAt" DATETIME,
   "passwordHash" TEXT,
   "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
   "sessionVersion" INTEGER NOT NULL DEFAULT 0,
@@ -33,11 +39,77 @@ CREATE TABLE "User" (
   "role" TEXT NOT NULL DEFAULT 'user',
   "reputation" INTEGER NOT NULL DEFAULT 0,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "suspendedAt" DATETIME
+  "suspendedAt" DATETIME,
+  "deletedAt" DATETIME
 );
 
 CREATE UNIQUE INDEX "User_handle_key" ON "User"("handle");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+CREATE TABLE "AccountDeletionRequest" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "reason" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'pending',
+  "requestedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "cancelledAt" DATETIME,
+  "processedAt" DATETIME,
+  "processedById" TEXT,
+  CONSTRAINT "AccountDeletionRequest_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "AccountDeletionRequest_processedById_fkey"
+    FOREIGN KEY ("processedById") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "AccountDeletionRequest_userId_key" ON "AccountDeletionRequest"("userId");
+CREATE INDEX "AccountDeletionRequest_status_requestedAt_idx" ON "AccountDeletionRequest"("status", "requestedAt");
+
+CREATE TABLE "Notification" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "body" TEXT NOT NULL,
+  "href" TEXT NOT NULL,
+  "eventKey" TEXT NOT NULL,
+  "readAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Notification_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "Notification_eventKey_key" ON "Notification"("eventKey");
+CREATE INDEX "Notification_userId_readAt_createdAt_idx" ON "Notification"("userId", "readAt", "createdAt");
+
+CREATE TABLE "EmailVerificationToken" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "tokenHash" TEXT NOT NULL,
+  "expiresAt" DATETIME NOT NULL,
+  "usedAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "EmailVerificationToken_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "EmailVerificationToken_tokenHash_key" ON "EmailVerificationToken"("tokenHash");
+CREATE INDEX "EmailVerificationToken_userId_expiresAt_idx" ON "EmailVerificationToken"("userId", "expiresAt");
+CREATE INDEX "EmailVerificationToken_expiresAt_idx" ON "EmailVerificationToken"("expiresAt");
+
+CREATE TABLE "PasswordResetToken" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "tokenHash" TEXT NOT NULL,
+  "expiresAt" DATETIME NOT NULL,
+  "usedAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "PasswordResetToken_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "PasswordResetToken_tokenHash_key" ON "PasswordResetToken"("tokenHash");
+CREATE INDEX "PasswordResetToken_userId_expiresAt_idx" ON "PasswordResetToken"("userId", "expiresAt");
+CREATE INDEX "PasswordResetToken_expiresAt_idx" ON "PasswordResetToken"("expiresAt");
 
 CREATE TABLE "Domain" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -75,6 +147,23 @@ CREATE TABLE "Term" (
 
 CREATE UNIQUE INDEX "Term_slug_key" ON "Term"("slug");
 CREATE INDEX "Term_normalizedHeadword_idx" ON "Term"("normalizedHeadword");
+
+CREATE TABLE "TermRedirect" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "sourceSlug" TEXT NOT NULL,
+  "sourceHeadword" TEXT NOT NULL,
+  "targetTermId" TEXT NOT NULL,
+  "reason" TEXT NOT NULL,
+  "mergedById" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "TermRedirect_targetTermId_fkey"
+    FOREIGN KEY ("targetTermId") REFERENCES "Term" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "TermRedirect_mergedById_fkey"
+    FOREIGN KEY ("mergedById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "TermRedirect_sourceSlug_key" ON "TermRedirect"("sourceSlug");
+CREATE INDEX "TermRedirect_targetTermId_idx" ON "TermRedirect"("targetTermId");
 
 CREATE TABLE "Sense" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -129,6 +218,7 @@ CREATE TABLE "UsageExample" (
   "contextNote" TEXT,
   "sourceType" TEXT NOT NULL DEFAULT 'original',
   "sourceUrl" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'active',
   "createdById" TEXT NOT NULL,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL,
@@ -158,6 +248,7 @@ CREATE TABLE "Comment" (
   "userId" TEXT NOT NULL,
   "category" TEXT NOT NULL DEFAULT 'other',
   "body" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'active',
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "Comment_proposalId_fkey" FOREIGN KEY ("proposalId") REFERENCES "TranslationProposal"("id") ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE

@@ -12,6 +12,7 @@ model User {
   displayName        String
   handle             String    @unique
   email              String?   @unique
+  emailVerifiedAt    DateTime?
   passwordHash       String?
   mustChangePassword Boolean   @default(false)
   sessionVersion     Int       @default(0)
@@ -22,18 +23,85 @@ model User {
   reputation         Int       @default(0)
   createdAt          DateTime  @default(now())
   suspendedAt        DateTime?
+  deletedAt          DateTime?
 
-  terms               Term[]                @relation("TermCreatedBy")
-  senses              Sense[]               @relation("SenseCreatedBy")
-  proposals           TranslationProposal[] @relation("ProposalCreatedBy")
-  examples            UsageExample[]        @relation("ExampleCreatedBy")
-  evaluations         Evaluation[]
-  comments            Comment[]
-  recommendations     Recommendation[]      @relation("RecommendationDecidedBy")
-  revisions           Revision[]            @relation("RevisionCreatedBy")
-  reports             Report[]              @relation("ReportCreatedBy")
-  suggestions         EditSuggestion[]      @relation("SuggestionCreatedBy")
-  reviewedSuggestions EditSuggestion[]      @relation("SuggestionReviewedBy")
+  terms                     Term[]                   @relation("TermCreatedBy")
+  senses                    Sense[]                  @relation("SenseCreatedBy")
+  proposals                 TranslationProposal[]    @relation("ProposalCreatedBy")
+  examples                  UsageExample[]           @relation("ExampleCreatedBy")
+  evaluations               Evaluation[]
+  comments                  Comment[]
+  recommendations           Recommendation[]         @relation("RecommendationDecidedBy")
+  revisions                 Revision[]               @relation("RevisionCreatedBy")
+  reports                   Report[]                 @relation("ReportCreatedBy")
+  suggestions               EditSuggestion[]         @relation("SuggestionCreatedBy")
+  reviewedSuggestions       EditSuggestion[]         @relation("SuggestionReviewedBy")
+  passwordResetTokens       PasswordResetToken[]
+  emailVerificationTokens   EmailVerificationToken[]
+  deletionRequest           AccountDeletionRequest?  @relation("DeletionRequestedBy")
+  processedDeletionRequests AccountDeletionRequest[] @relation("DeletionProcessedBy")
+  notifications             Notification[]
+  mergedTerms               TermRedirect[]           @relation("TermMergedBy")
+}
+
+model AccountDeletionRequest {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  reason        String?
+  status        String    @default("pending")
+  requestedAt   DateTime  @default(now())
+  cancelledAt   DateTime?
+  processedAt   DateTime?
+  processedById String?
+
+  user        User  @relation("DeletionRequestedBy", fields: [userId], references: [id])
+  processedBy User? @relation("DeletionProcessedBy", fields: [processedById], references: [id])
+
+  @@index([status, requestedAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  href      String
+  eventKey  String    @unique
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
 }
 
 model Domain {
@@ -81,8 +149,24 @@ model Term {
   createdBy User           @relation("TermCreatedBy", fields: [createdById], references: [id])
   senses    Sense[]
   examples  UsageExample[]
+  redirects TermRedirect[] @relation("TermRedirectTarget")
 
   @@index([normalizedHeadword])
+}
+
+model TermRedirect {
+  id             String   @id @default(cuid())
+  sourceSlug     String   @unique
+  sourceHeadword String
+  targetTermId   String
+  reason         String
+  mergedById     String
+  createdAt      DateTime @default(now())
+
+  targetTerm Term @relation("TermRedirectTarget", fields: [targetTermId], references: [id])
+  mergedBy   User @relation("TermMergedBy", fields: [mergedById], references: [id])
+
+  @@index([targetTermId])
 }
 
 model Sense {
@@ -140,6 +224,7 @@ model UsageExample {
   contextNote       String?
   sourceType        String   @default("original")
   sourceUrl         String?
+  status            String   @default("active")
   createdById       String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -171,6 +256,7 @@ model Comment {
   userId     String
   category   String   @default("other")
   body       String
+  status     String   @default("active")
   createdAt  DateTime @default(now())
 
   proposal TranslationProposal? @relation(fields: [proposalId], references: [id])

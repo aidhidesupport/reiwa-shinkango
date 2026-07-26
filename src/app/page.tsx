@@ -1,32 +1,75 @@
 import Link from "next/link";
-import { ArrowRight, MessageSquareText, Search, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  MessageSquareText,
+  Quote,
+  Search,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { SearchBox } from "@/components/SearchBox";
 import { prisma } from "@/lib/prisma";
-import { uniqueTagsFromSenses } from "@/lib/tags";
+import { scoreProposal } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    siteName: "令和新漢語",
+    title: "令和新漢語",
+    description: "横文字を文脈に合う日本語へ。日本語案と使用例を公開で推敲する場。",
+    url: "/",
+  },
+};
 
 export default async function HomePage() {
-  const [termCount, proposalCount, exampleCount, recentTerms, recommendations] = await Promise.all([
-    prisma.term.count(),
-    prisma.translationProposal.count(),
-    prisma.usageExample.count(),
-    prisma.term.findMany({
+  const [termCount, proposalCount, exampleCount, recentProposals, recommendations] = await Promise.all([
+    prisma.term.count({ where: { status: "published" } }),
+    prisma.translationProposal.count({
+      where: {
+        status: { not: "hidden" },
+        sense: { term: { status: "published" } },
+      },
+    }),
+    prisma.usageExample.count({
+      where: {
+        status: { not: "hidden" },
+        term: { status: "published" },
+        OR: [
+          { proposalId: null },
+          { proposal: { status: { not: "hidden" } } },
+        ],
+      },
+    }),
+    prisma.translationProposal.findMany({
+      where: {
+        status: { not: "hidden" },
+        sense: { term: { status: "published" } },
+      },
       take: 6,
       orderBy: { updatedAt: "desc" },
       include: {
-        senses: {
+        evaluations: true,
+        examples: { where: { status: { not: "hidden" } } },
+        sense: {
           include: {
+            term: true,
+            domain: true,
             tags: { include: { tag: true } },
-            proposals: {
-              take: 2,
-              where: { status: { in: ["recommended", "limited", "tentative"] } },
-            },
           },
         },
       },
     }),
     prisma.recommendation.findMany({
+      where: {
+        proposal: { status: { not: "hidden" } },
+        sense: { term: { status: "published" } },
+      },
       take: 5,
       orderBy: { updatedAt: "desc" },
       include: {
@@ -48,7 +91,7 @@ export default async function HomePage() {
           <p className="eyebrow">公開推敲型の横文字言い換え集</p>
           <h1>横文字を、文脈に合う日本語へ。</h1>
           <p>
-            一語一訳で決めつけず、意味・分野・使用例ごとに訳語案を出し合って磨く場所です。
+            一語一訳で決めつけず、意味・分野・使用例ごとに日本語案を出し合って磨く場所です。
           </p>
         </div>
         <SearchBox autoFocus />
@@ -61,7 +104,7 @@ export default async function HomePage() {
         </div>
         <div>
           <strong>{proposalCount}</strong>
-          <span>訳語案</span>
+          <span>日本語案</span>
         </div>
         <div>
           <strong>{exampleCount}</strong>
@@ -71,39 +114,65 @@ export default async function HomePage() {
 
       <section className="content-grid">
         <div className="content-column wide">
-          <div className="section-heading">
+          <div className="section-heading home-recent-heading">
             <div>
-              <p className="eyebrow">最近の項目</p>
-              <h2>横文字一覧</h2>
+              <p className="eyebrow">最近の追加・更新</p>
+              <h2>新着の日本語案</h2>
             </div>
             <Link href="/terms/new" className="text-link">
-              投稿する <ArrowRight size={16} />
+              日本語案を投稿 <ArrowRight size={16} />
             </Link>
           </div>
 
-          <div className="term-list">
-            {recentTerms.map((term) => {
-              const tags = uniqueTagsFromSenses(term.senses);
-              return (
-                <Link key={term.id} href={`/terms/${term.slug}`} className="term-card">
-                  <div className="term-card-head">
-                    <h3>{term.headword}</h3>
-                    {term.originalWord ? <span>{term.originalWord}</span> : null}
-                  </div>
-                  <p>{term.summary}</p>
-                  <div className="tag-row">
-                    {tags.map((tag) => (
-                      <span key={tag.id}>{tag.name}</span>
-                    ))}
-                  </div>
-                  <div className="mini-proposals">
-                    {term.senses.flatMap((sense) => sense.proposals).map((proposal) => (
-                      <span key={proposal.id}>{proposal.text}</span>
-                    ))}
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="recent-proposal-list">
+            {recentProposals.map((proposal) => (
+              <Link
+                key={proposal.id}
+                href={`/terms/${proposal.sense.term.slug}#proposal-${proposal.id}`}
+                className="recent-proposal-card"
+              >
+                <div className="recent-proposal-source">
+                  <span>取り上げている言葉</span>
+                  <strong>{proposal.sense.term.headword}</strong>
+                  {proposal.sense.term.originalWord ? <small>{proposal.sense.term.originalWord}</small> : null}
+                </div>
+                <h3>{proposal.text}</h3>
+                <div className="recent-proposal-context">
+                  <strong>合う場面</strong>
+                  <p>{proposal.fitContext}</p>
+                </div>
+                <div className="recent-proposal-taxonomy">
+                  <span className="domain-chip">{proposal.sense.domain?.name ?? "未分類"}</span>
+                  {proposal.sense.tags.slice(0, 3).map(({ tag }) => (
+                    <span key={tag.id}>{tag.name}</span>
+                  ))}
+                </div>
+                <div className="recent-proposal-metrics">
+                  <span>
+                    <BarChart3 size={14} />
+                    参考スコア {scoreProposal(proposal)}
+                  </span>
+                  <span>
+                    <Users size={14} />
+                    評価 {proposal.evaluations.length}人
+                  </span>
+                  <span>
+                    <Quote size={14} />
+                    使用例 {proposal.examples.length}件
+                  </span>
+                </div>
+                <span className="recent-proposal-link">
+                  この案を詳しく見る
+                  <ArrowRight size={16} />
+                </span>
+              </Link>
+            ))}
+            {recentProposals.length === 0 ? (
+              <div className="proposal-empty">
+                <strong>日本語案はまだありません。</strong>
+                <p>最初の日本語案を、合う場面と一緒に投稿できます。</p>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -111,7 +180,7 @@ export default async function HomePage() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">整理済み</p>
-              <h2>推奨訳</h2>
+              <h2>推奨する日本語案</h2>
             </div>
             <ShieldCheck size={20} />
           </div>
@@ -137,7 +206,7 @@ export default async function HomePage() {
         <div>
           <Search size={22} />
           <h2>探す</h2>
-          <p>横文字や訳語案から項目を見つけます。</p>
+          <p>横文字や日本語案から項目を見つけます。</p>
         </div>
         <div>
           <MessageSquareText size={22} />
@@ -147,7 +216,7 @@ export default async function HomePage() {
         <div>
           <ShieldCheck size={22} />
           <h2>整理する</h2>
-          <p>評価と議論をもとに推奨訳を残します。</p>
+          <p>評価と議論をもとに、推奨する日本語案を残します。</p>
         </div>
       </section>
     </div>

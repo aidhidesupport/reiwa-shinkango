@@ -11,6 +11,12 @@ describe("authentication rate limiting", () => {
     expect(getAuthRateLimitRule("sign-in", "account")).toEqual({ limit: 10, windowSeconds: 900 });
     expect(getAuthRateLimitRule("sign-in", "ip")).toEqual({ limit: 50, windowSeconds: 900 });
     expect(getAuthRateLimitRule("sign-up", "account")).toEqual({ limit: 3, windowSeconds: 3600 });
+    expect(getAuthRateLimitRule("password-reset-request", "account"))
+      .toEqual({ limit: 3, windowSeconds: 3600 });
+    expect(getAuthRateLimitRule("password-reset-complete", "ip"))
+      .toEqual({ limit: 50, windowSeconds: 900 });
+    expect(getAuthRateLimitRule("email-verification-resend", "account"))
+      .toEqual({ limit: 3, windowSeconds: 3600 });
   });
 
   it("rounds timestamps to a stable fixed window", () => {

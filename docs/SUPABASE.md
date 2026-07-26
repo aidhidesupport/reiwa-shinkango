@@ -51,6 +51,12 @@ ADMIN_EMAIL="owner@example.com"
 ADMIN_PASSWORD="初回投入用の強いパスワード"
 CONTACT_EMAIL="aidhide.support@gmail.com"
 OPERATOR_NAME="令和新漢語運営事務局"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="465"
+SMTP_SECURE="true"
+SMTP_USER="aidhide.support@gmail.com"
+SMTP_PASSWORD="メールサービスが発行したアプリパスワード"
+EMAIL_FROM="令和新漢語 <aidhide.support@gmail.com>"
 DATA_LICENSE="site-only"
 RATE_LIMIT_WINDOW_SECONDS="60"
 RATE_LIMIT_POSTS_PER_WINDOW="12"
@@ -82,7 +88,7 @@ npm run prisma:generate
 - Framework Preset: Next.js
 - Build Command: `npm run build:postgres`（環境変数検査を含む）
 - Install Command: `npm ci`
-- Environment Variables: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CONTACT_EMAIL`, `OPERATOR_NAME`, `DATA_LICENSE`, `RATE_LIMIT_WINDOW_SECONDS`, `RATE_LIMIT_POSTS_PER_WINDOW`, `RATE_LIMIT_COMMENTS_PER_WINDOW`, `RATE_LIMIT_REPORTS_PER_WINDOW`
+- Environment Variables: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CONTACT_EMAIL`, `OPERATOR_NAME`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, `DATA_LICENSE`, `RATE_LIMIT_WINDOW_SECONDS`, `RATE_LIMIT_POSTS_PER_WINDOW`, `RATE_LIMIT_COMMENTS_PER_WINDOW`, `RATE_LIMIT_REPORTS_PER_WINDOW`
 - Function Region: `hnd1`（`vercel.json` で設定済み）
 
 本番反映前に、手元またはCIで以下を実行します。
@@ -112,7 +118,7 @@ curl -f https://your-domain.example/api/health
 npm run backup:postgres
 ```
 
-生成されたSQLは `backups/` に置かれます。本番ではこの出力先を別ストレージへ退避してください。
+生成されたSQLは `backups/` に置かれます。`public` のアプリ用テーブルだけを保存し、所有者・権限情報は含めません。本番ではこの出力先を別ストレージへ退避してください。
 `pg_dump` は接続先PostgreSQLと同じメジャーバージョン、またはそれより新しいクライアントを使用してください。
 
 ## 参考

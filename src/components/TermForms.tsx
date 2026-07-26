@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Plus, Send } from "lucide-react";
 import {
   addProposalWithState,
@@ -12,6 +13,153 @@ type Domain = {
   id: string;
   name: string;
 };
+
+type ProposalFieldValues = {
+  proposalText?: string;
+  register?: string;
+  fitContext?: string;
+  unfitContext?: string;
+  rationale?: string;
+  pros?: string;
+  cons?: string;
+  originalSentence?: string;
+  rewrittenSentence?: string;
+  contextNote?: string;
+};
+
+export function ProposalFields({
+  idPrefix,
+  values = {},
+  includeExample = false,
+}: {
+  idPrefix: string;
+  values?: ProposalFieldValues;
+  includeExample?: boolean;
+}) {
+  const proposalHelpId = `${idPrefix}-proposal-help`;
+
+  return (
+    <div className="proposal-fields">
+      <div className="proposal-main-field">
+        <label htmlFor={`${idPrefix}-proposal`}>日本語案（必須）</label>
+        <input
+          id={`${idPrefix}-proposal`}
+          name="proposalText"
+          required
+          maxLength={120}
+          aria-describedby={proposalHelpId}
+          defaultValue={values.proposalText}
+          placeholder="例：説明責任"
+        />
+        <p id={proposalHelpId}>長い説明ではなく、実際に言い換えとして使える短い案を入力します。</p>
+      </div>
+
+      <fieldset className="proposal-support-fields">
+        <legend>案の使いどころ・理由</legend>
+        <p>よく合う場面は必須です。そのほかの補足もあると、案どうしを比較しやすくなります。</p>
+        <div className="form-grid">
+          <label>
+            文体
+            <select name="register" defaultValue={values.register ?? "neutral"}>
+              {REGISTERS.map((register) => (
+                <option key={register.id} value={register.id}>{register.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            よく合う場面（必須）
+            <input
+              name="fitContext"
+              required
+              maxLength={1000}
+              defaultValue={values.fitContext}
+              placeholder="例：行政文書、組織運営"
+            />
+          </label>
+        </div>
+        <label>
+          この案を選んだ理由（任意）
+          <textarea
+            name="rationale"
+            rows={3}
+            maxLength={2000}
+            defaultValue={values.rationale}
+            placeholder="例：意味が伝わりやすく、すでに広く使われているため。"
+          />
+        </label>
+        <label>
+          避けたい場面（任意）
+          <input
+            name="unfitContext"
+            maxLength={1000}
+            defaultValue={values.unfitContext}
+            placeholder="例：親しい人との日常会話"
+          />
+        </label>
+        <div className="form-grid">
+          <label>
+            良い点（任意）
+            <input
+              name="pros"
+              maxLength={1000}
+              defaultValue={values.pros}
+              placeholder="例：短く、意味を想像しやすい"
+            />
+          </label>
+          <label>
+            弱い点（任意）
+            <input
+              name="cons"
+              maxLength={1000}
+              defaultValue={values.cons}
+              placeholder="例：場面によって意味が広すぎる"
+            />
+          </label>
+        </div>
+      </fieldset>
+
+      {includeExample ? (
+        <fieldset className="proposal-support-fields">
+          <legend>言い換え例（任意）</legend>
+          <p>入力する場合は、元の文と言い換えた文をセットで入力します。</p>
+          <div className="form-grid">
+            <label>
+              元の言葉を使った文
+              <textarea
+                name="originalSentence"
+                rows={3}
+                minLength={3}
+                maxLength={3000}
+                defaultValue={values.originalSentence}
+                placeholder="例：経営にはアカウンタビリティが必要です。"
+              />
+            </label>
+            <label>
+              日本語案に言い換えた文
+              <textarea
+                name="rewrittenSentence"
+                rows={3}
+                minLength={3}
+                maxLength={3000}
+                defaultValue={values.rewrittenSentence}
+                placeholder="例：経営には説明責任が必要です。"
+              />
+            </label>
+          </div>
+          <label>
+            例文が使われる場面（任意）
+            <input
+              name="contextNote"
+              maxLength={1000}
+              defaultValue={values.contextNote}
+              placeholder="例：会議資料、利用者向け説明"
+            />
+          </label>
+        </fieldset>
+      ) : null}
+    </div>
+  );
+}
 
 export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain[]; defaultHeadword?: string }) {
   return (
@@ -67,7 +215,10 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
         </label>
         <fieldset className="classification-fields">
           <legend>分類（任意）</legend>
-          <p>大まかな分野を選び、必要なら自由なタグを付けられます。両方空でも投稿できます。</p>
+          <p>
+            分野は主な利用場面を1つ、タグは既存の分類を優先して原則1〜3個を付けます。
+            両方空でも投稿できます。 <Link href="/rules/classification" target="_blank">分類ルールを見る</Link>
+          </p>
           <div className="form-grid">
             <label>
               分野
@@ -94,56 +245,7 @@ export function NewTermForm({ domains, defaultHeadword = "" }: { domains: Domain
             <p>この投稿の中心です。この使われ方を自然に表せる日本語を、まず1案入力します。</p>
           </div>
         </div>
-        <div className="proposal-main-field">
-          <label htmlFor="new-term-proposal">日本語案（必須）</label>
-          <input
-            id="new-term-proposal"
-            name="proposalText"
-            required
-            maxLength={120}
-            aria-describedby="new-term-proposal-help"
-            placeholder="例：説明責任"
-          />
-          <p id="new-term-proposal-help">長い説明ではなく、実際に言い換えとして使える短い案を入力します。</p>
-        </div>
-
-        <fieldset className="proposal-support-fields">
-          <legend>案の使いどころ・理由（任意）</legend>
-          <p>どんな場面に合う案なのかを補足すると、ほかの人が評価しやすくなります。</p>
-          <div className="form-grid">
-            <label>
-              文体
-              <select name="register" defaultValue="neutral">
-                {REGISTERS.map((register) => (
-                  <option key={register.id} value={register.id}>{register.label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              よく合う場面
-              <input name="fitContext" placeholder="例：行政文書、組織運営" />
-            </label>
-          </div>
-          <label>
-            この案を選んだ理由
-            <textarea name="rationale" rows={2} placeholder="例：意味が伝わりやすく、すでに広く使われているため。" />
-          </label>
-        </fieldset>
-
-        <fieldset className="proposal-support-fields">
-          <legend>言い換え例（任意）</legend>
-          <p>元の文と言い換えた文を、セットで入力します。</p>
-          <div className="form-grid">
-            <label>
-              元の言葉を使った文
-              <textarea name="originalSentence" rows={3} placeholder="例：経営にはアカウンタビリティが必要です。" />
-            </label>
-            <label>
-              日本語案に言い換えた文
-              <textarea name="rewrittenSentence" rows={3} placeholder="例：経営には説明責任が必要です。" />
-            </label>
-          </div>
-        </fieldset>
+        <ProposalFields idPrefix="new-term" includeExample />
       </section>
       <button type="submit" className="button">
         <Plus size={17} />
@@ -170,6 +272,10 @@ export function AddSenseForm({ termId, termSlug, domains }: { termId: string; te
         </label>
         <fieldset className="classification-fields">
           <legend>分類（任意）</legend>
+          <p>
+            分野は主な利用場面を1つ、タグは原則1〜3個です。
+            判断できない場合は空でも追加できます。 <Link href="/rules/classification" target="_blank">分類ルールを見る</Link>
+          </p>
           <div className="form-grid">
             <label>
               分野
@@ -211,55 +317,10 @@ export function AddProposalForm({
         <input type="hidden" name="termId" value={termId} />
         <input type="hidden" name="termSlug" value={termSlug} />
         <input type="hidden" name="senseId" value={senseId} />
-        <div className="proposal-main-field">
-          <label htmlFor={`proposal-text-${senseId}`}>日本語案（必須）</label>
-          <input id={`proposal-text-${senseId}`} name="proposalText" required maxLength={120} />
-        </div>
-        <div className="form-grid">
-          <label>
-            文体
-            <select name="register" defaultValue="neutral">
-              {REGISTERS.map((register) => (
-                <option key={register.id} value={register.id}>{register.label}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label>
-          合う文脈
-          <input name="fitContext" required />
-        </label>
-        <label>
-          避けたい文脈
-          <input name="unfitContext" />
-        </label>
-        <label>
-          理由
-          <textarea name="rationale" rows={3} />
-        </label>
-        <div className="form-grid">
-          <label>
-            良い点
-            <input name="pros" />
-          </label>
-          <label>
-            弱い点
-            <input name="cons" />
-          </label>
-        </div>
-        <div className="form-grid">
-          <label>
-            元文
-            <textarea name="originalSentence" rows={3} />
-          </label>
-          <label>
-            言い換え
-            <textarea name="rewrittenSentence" rows={3} />
-          </label>
-        </div>
+        <ProposalFields idPrefix={`add-proposal-${senseId}`} includeExample />
         <button type="submit" className="button secondary">
           <Send size={17} />
-          <span>投稿</span>
+          <span>この日本語案を投稿</span>
         </button>
       </ActionForm>
     </details>
@@ -309,6 +370,10 @@ export function EditSenseForm({
         </label>
         <fieldset className="classification-fields">
           <legend>分類（任意）</legend>
+          <p>
+            登録する意味と例文を基準に、分野を1つ、タグを原則1〜3個に整理します。{" "}
+            <Link href="/rules/classification" target="_blank">分類ルールを見る</Link>
+          </p>
           <div className="form-grid">
             <label>
               分野

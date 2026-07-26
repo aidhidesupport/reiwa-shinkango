@@ -20,7 +20,7 @@ export default function RulesPage() {
         <article>
           <BookOpenCheck size={22} />
           <h2>良い投稿</h2>
-          <p>訳語案には、合う文脈、弱点、元文と言い換え文を添えてください。短い案でも、使用例があるほど評価しやすくなります。</p>
+          <p>日本語案には、よく合う場面、弱い点、元の文と言い換えた文を添えてください。短い案でも、使用例があるほど評価しやすくなります。</p>
         </article>
         <article>
           <CheckCircle2 size={22} />
@@ -35,7 +35,7 @@ export default function RulesPage() {
         <article>
           <Scale size={22} />
           <h2>編集判断</h2>
-          <p>編集者は修正提案、重複整理、通報対応、推奨訳の設定、非推奨理由の記録を行います。直接編集や差し戻しの理由は変更履歴に残します。</p>
+          <p>編集者は修正提案、重複整理、通報対応、推奨する日本語案の設定、非推奨理由の記録を行います。直接編集や差し戻しの理由は変更履歴に残します。</p>
         </article>
       </section>
 
@@ -45,6 +45,8 @@ export default function RulesPage() {
       </div>
 
       <div className="document-links">
+        <Link href="/rules/classification" className="text-link">分野・タグの分類ルール</Link>
+        <Link href="/rules/permissions" className="text-link">役割と権限</Link>
         <Link href="/legal/terms" className="text-link">利用規約</Link>
         <Link href="/legal/privacy" className="text-link">プライバシー</Link>
       </div>

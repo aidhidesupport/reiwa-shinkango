@@ -2,7 +2,13 @@ import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { prisma } from "./prisma";
 
-export type AuthRateLimitKind = "sign-in" | "sign-up";
+export type AuthRateLimitKind =
+  | "sign-in"
+  | "sign-up"
+  | "email-verification-resend"
+  | "email-verification-complete"
+  | "password-reset-request"
+  | "password-reset-complete";
 export type AuthRateLimitScope = "account" | "ip";
 
 type AuthRateLimitRule = {
@@ -18,6 +24,22 @@ const AUTH_RATE_LIMITS: Record<AuthRateLimitKind, Record<AuthRateLimitScope, Aut
   "sign-up": {
     account: { limit: 3, windowSeconds: 60 * 60 },
     ip: { limit: 10, windowSeconds: 60 * 60 },
+  },
+  "email-verification-resend": {
+    account: { limit: 3, windowSeconds: 60 * 60 },
+    ip: { limit: 20, windowSeconds: 60 * 60 },
+  },
+  "email-verification-complete": {
+    account: { limit: 10, windowSeconds: 15 * 60 },
+    ip: { limit: 50, windowSeconds: 15 * 60 },
+  },
+  "password-reset-request": {
+    account: { limit: 3, windowSeconds: 60 * 60 },
+    ip: { limit: 20, windowSeconds: 60 * 60 },
+  },
+  "password-reset-complete": {
+    account: { limit: 10, windowSeconds: 15 * 60 },
+    ip: { limit: 50, windowSeconds: 15 * 60 },
   },
 };
 
@@ -103,6 +125,12 @@ export async function enforceAuthRateLimit(kind: AuthRateLimitKind, normalizedEm
   if (ipAllowed && accountAllowed) return;
   if (kind === "sign-in") {
     throw new Error("ログイン試行が多すぎます。15分ほど時間をおいてください。");
+  }
+  if (kind === "email-verification-resend") {
+    throw new Error("確認メールの再送が多すぎます。時間をおいてください。");
+  }
+  if (kind === "email-verification-complete" || kind.startsWith("password-reset")) {
+    throw new Error("確認の試行が多すぎます。時間をおいてください。");
   }
   throw new Error("短時間のアカウント登録が多すぎます。1時間ほど時間をおいてください。");
 }

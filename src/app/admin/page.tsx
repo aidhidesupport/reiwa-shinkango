@@ -1,5 +1,6 @@
-import { KeyRound, Shield, UserRoundCog, UserX } from "lucide-react";
+import { KeyRound, Shield, Trash2, UserRoundCog, UserX } from "lucide-react";
 import {
+  processAccountDeletionWithState,
   resetUserPasswordWithState,
   suspendUserWithState,
   unsuspendUserWithState,
@@ -7,18 +8,12 @@ import {
 } from "@/app/actions";
 import { ActionForm } from "@/components/ActionForm";
 import { EmptyState } from "@/components/EmptyState";
+import { roleLabel } from "@/lib/permissions";
 import { canAdmin, getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 type AdminPageProps = {
-  searchParams: Promise<{ q?: string }>;
-};
-
-const roleLabels: Record<string, string> = {
-  admin: "管理者",
-  editor: "編集者",
-  trusted: "信頼ユーザー",
-  user: "利用者",
+  searchParams: Promise<{ q?: string; deletionProcessed?: string }>;
 };
 
 const roleOptions = [
@@ -35,7 +30,8 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
-  const [{ q = "" }, currentUser] = await Promise.all([searchParams, getCurrentUser()]);
+  const [params, currentUser] = await Promise.all([searchParams, getCurrentUser()]);
+  const { q = "" } = params;
   const query = q.trim();
 
   if (!currentUser || !canAdmin(currentUser.role)) {
@@ -51,29 +47,50 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     );
   }
 
-  const users = await prisma.user.findMany({
-    where: query
-      ? {
+  const [users, deletionRequests] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        ...(query ? {
           OR: [
             { displayName: { contains: query } },
             { handle: { contains: query } },
             { email: { contains: query.toLowerCase() } },
           ],
-        }
-      : undefined,
-    take: 40,
-    orderBy: [{ suspendedAt: "desc" }, { createdAt: "desc" }],
-    include: {
-      _count: {
-        select: {
-          terms: true,
-          proposals: true,
-          comments: true,
-          reports: true,
+        } : {}),
+      },
+      take: 40,
+      orderBy: [{ suspendedAt: "desc" }, { createdAt: "desc" }],
+      include: {
+        _count: {
+          select: {
+            terms: true,
+            proposals: true,
+            comments: true,
+            reports: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.accountDeletionRequest.findMany({
+      where: { status: "pending" },
+      orderBy: { requestedAt: "asc" },
+      include: {
+        user: {
+          include: {
+            _count: {
+              select: {
+                terms: true,
+                proposals: true,
+                comments: true,
+                evaluations: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
 
   const returnTo = query ? `/admin?q=${encodeURIComponent(query)}` : "/admin";
 
@@ -82,7 +99,62 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <section className="page-title">
         <p className="eyebrow">Admin</p>
         <h1>ユーザー管理</h1>
-        <p>ロール変更、停止、停止解除を行います。自分自身のロール変更と停止はできません。</p>
+        <p>削除申請の処理、ロール変更、停止、停止解除を行います。自分自身の管理操作はできません。</p>
+      </section>
+
+      {params.deletionProcessed ? (
+        <p className="notice success">アカウント情報を消去し、投稿の作成者表示を匿名化しました。</p>
+      ) : null}
+
+      <section className="admin-deletion-queue">
+        <div className="section-heading-row">
+          <div>
+            <p className="eyebrow">Deletion requests</p>
+            <h2>アカウント削除申請</h2>
+          </div>
+          <span className="count-pill">{deletionRequests.length}件</span>
+        </div>
+        {deletionRequests.length === 0 ? (
+          <p className="muted">処理待ちの申請はありません。</p>
+        ) : (
+          <div className="deletion-request-list">
+            {deletionRequests.map((request) => (
+              <article key={request.id} className="deletion-request-card">
+                <div>
+                  <h3>{request.user.displayName} <span>@{request.user.handle}</span></h3>
+                  <p>{request.user.email ?? "メールアドレスなし"} / 申請日時: {request.requestedAt.toLocaleString("ja-JP")}</p>
+                  {request.reason ? <p>本人記入の理由: {request.reason}</p> : null}
+                  <p>
+                    項目 {request.user._count.terms}件・日本語案 {request.user._count.proposals}件・
+                    コメント {request.user._count.comments}件・評価 {request.user._count.evaluations}件
+                  </p>
+                </div>
+                <details className="admin-deletion-details">
+                  <summary>
+                    <Trash2 size={15} aria-hidden="true" />
+                    削除処理を確認
+                  </summary>
+                  <ActionForm
+                    action={processAccountDeletionWithState}
+                    className="inline-form"
+                    pendingMessage="本人情報を消去しています…"
+                  >
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <input type="hidden" name="returnTo" value={returnTo} />
+                    <label>
+                      「削除処理」と入力
+                      <input name="confirmation" required pattern="削除処理" autoComplete="off" />
+                    </label>
+                    <button type="submit" className="danger-button" disabled={request.userId === currentUser.id}>
+                      アカウント情報を消去
+                    </button>
+                  </ActionForm>
+                  <p className="muted">メール、認証情報、プロフィールを消去します。この操作は元に戻せません。</p>
+                </details>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <form action="/admin" className="admin-search">
@@ -107,7 +179,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   {managedUser.email ? ` / ${managedUser.email}` : ""}
                 </p>
               </div>
-              <span className="role-pill">{roleLabels[managedUser.role] ?? managedUser.role}</span>
+              <span className="role-pill">{roleLabel(managedUser.role)}</span>
             </div>
 
             <dl className="admin-user-stats">
@@ -116,7 +188,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <dd>{managedUser._count.terms}</dd>
               </div>
               <div>
-                <dt>訳語案</dt>
+                <dt>日本語案</dt>
                 <dd>{managedUser._count.proposals}</dd>
               </div>
               <div>

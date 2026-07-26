@@ -6,23 +6,29 @@
 
 - 横文字項目の検索
 - 横文字項目の詳細ページ
-- メール/パスワードログイン
-- 意味・分野ごとの訳語案表示
+- メール/パスワードログイン、メールアドレス確認、本人向けパスワード再設定
+- 意味・分野ごとの日本語案表示
 - 使用例の比較表示
-- 訳語案の投稿
+- 日本語案の投稿
 - 観点別評価ラベル
 - コメントによる議論
-- 編集者による推奨訳設定
-- 意味・訳語案・使用例の修正提案と直接編集
+- 自分の投稿・コメント・評価を確認できるマイページ
+- コメント・推奨判断・通報結果のサイト内通知
+- 編集者による推奨する日本語案の設定
+- 意味・日本語案・使用例の修正提案と直接編集
 - 修正提案の承認・却下、理由付き差し戻し
-- 変更履歴
-- 通報キュー
+- 対象名・項目名・状態値を日本語で読める変更履歴
+- 画面と保存処理で共有する役割別権限表
+- 対象内容・公開状態・処理結果が分かる通報キュー
+- 比較プレビューと旧URL転送を備えた重複項目の統合
+- 理由・実行者の履歴と復元キューを備えた投稿の非公開管理
 - 編集者ダッシュボード
-- 表示名・ハンドル・パスワード変更、管理者による一時パスワード発行
+- 表示名・ハンドル・パスワード変更、退会・アカウント削除申請、管理者による処理
 - 投稿ルール、利用規約、プライバシーポリシー
 - ヘルスチェック、サイトマップ、robots
+- Vercel Web Analytics、外形監視・障害対応方針
 - SQLite/PostgreSQL向け運用スクリプト
-- 本番環境変数検査とPlaywright E2Eテスト
+- 本番環境変数検査、アクセシビリティ監査、PC・390px幅のPlaywright E2Eテスト
 
 ## セットアップ
 
@@ -50,9 +56,12 @@ change-me-admin-password
 npm run test
 npm run typecheck
 npm run build
+npm run audit:data
 npm audit --omit=dev
 npm run test:e2e
 ```
+
+公開前のローカル検証は `npm run verify:local` で一括実行できます。
 
 ## DB
 
@@ -61,3 +70,5 @@ npm run test:e2e
 Prisma CLI の `db push` がこの環境で安定しなかったため、SQLite の初期DDLは [prisma/init.sql](./prisma/init.sql) に固定しています。
 
 公開時は PostgreSQL を使う想定です。具体的な担当分けと公開判定は [docs/PUBLICATION_CHECKLIST.md](./docs/PUBLICATION_CHECKLIST.md)、汎用手順は [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)、Supabase で使う場合は [docs/SUPABASE.md](./docs/SUPABASE.md) を参照してください。
+
+初期データの監査結果と編集レビュー対象は [docs/DATA_QUALITY_REVIEW.md](./docs/DATA_QUALITY_REVIEW.md) で管理します。

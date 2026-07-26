@@ -1,0 +1,42 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: file:./dev.db
+      SESSION_SECRET: ci-session-secret-with-at-least-32-characters
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      ADMIN_EMAIL: admin-ci@example.test
+      ADMIN_PASSWORD: local-ci-admin-password
+      CONTACT_EMAIL: contact-ci@example.test
+      OPERATOR_NAME: 令和新漢語CI
+      DATA_LICENSE: site-only
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run db:reset
+      - run: npm run build
+      - run: npm run test:e2e
