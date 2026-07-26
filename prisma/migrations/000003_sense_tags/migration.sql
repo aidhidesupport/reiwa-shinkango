@@ -19,6 +19,7 @@ FOREIGN KEY ("senseId") REFERENCES "Sense"("id") ON DELETE RESTRICT ON UPDATE CA
 ALTER TABLE "SenseTag" ADD CONSTRAINT "SenseTag_tagId_fkey"
 FOREIGN KEY ("tagId") REFERENCES "Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-DROP TABLE "TermTag";
+-- Keep TermTag as a migration backup and for compatibility with the previous
+-- deployment. New application writes use SenseTag exclusively.
 
 COMMIT;
