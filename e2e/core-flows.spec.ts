@@ -78,6 +78,10 @@ test("公開権限表で編集者と管理者の操作境界を確認できる",
 
 test("トップページで新着の日本語案を主役として見られる", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", {
+    name: "新しい概念を、日本語で考えられる言葉へ。",
+  })).toBeVisible();
+  await expect(page.getByRole("link", { name: "活動理念を読む" })).toHaveAttribute("href", "/vision");
   await expect(page.getByRole("heading", { name: "新着の日本語案" })).toBeVisible();
 
   const proposalCards = page.locator(".recent-proposal-card");
@@ -112,6 +116,25 @@ test("トップページで新着の日本語案を主役として見られる",
   );
   expect(mobileBoxes[0]?.x).toBe(mobileBoxes[1]?.x);
   expect(mobileBoxes[1]?.y).toBeGreaterThan(mobileBoxes[0]?.y ?? 0);
+});
+
+test("活動理念から造語の原則と参加方法を確認できる", async ({ page }) => {
+  await page.goto("/vision");
+
+  await expect(page.getByRole("heading", {
+    name: /新しい概念を、.*日本語で考えられる言葉へ。/,
+  })).toBeVisible();
+  await expect(page.getByRole("heading", {
+    name: "言い換え辞書ではなく、公開造語活動です。",
+  })).toBeVisible();
+  await expect(page.locator(".vision-principles article")).toHaveCount(6);
+  await expect(page.locator(".vision-process li")).toHaveCount(5);
+  await expect(page.getByText("外来語を排除しません")).toBeVisible();
+  await expect(page.getByRole("link", { name: "最初の一語を提案" })).toHaveAttribute("href", "/terms/new");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });
 
 test("マイページで自分の投稿・コメント・評価を種類別にたどれる", async ({ page }) => {

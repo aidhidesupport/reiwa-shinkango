@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { AddProposalForm, AddSenseForm, EditSenseForm } from "@/components/TermForms";
 import { ProposalCard } from "@/components/ProposalCard";
 import { RecommendationWorkbench } from "@/components/RecommendationWorkbench";
+import { ShareButton } from "@/components/ShareButton";
 import { canEditContent, canEditRecommendations, canModerate, getCurrentUser } from "@/lib/session";
 import { sortedByProposalScore } from "@/lib/scoring";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +29,7 @@ export async function generateMetadata({ params }: TermPageProps) {
       include: { targetTerm: true },
     });
     if (termRedirect) {
+      const imageUrl = `/share/terms/${encodeURIComponent(termRedirect.targetTerm.slug)}`;
       return {
         title: `${termRedirect.targetTerm.headword}の日本語案・言い換え`,
         description: termRedirect.targetTerm.summary,
@@ -41,10 +43,23 @@ export async function generateMetadata({ params }: TermPageProps) {
           title: `${termRedirect.targetTerm.headword}の日本語案・言い換え`,
           description: termRedirect.targetTerm.summary,
           url: `/terms/${termRedirect.targetTerm.slug}`,
+          images: [{
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: `${termRedirect.targetTerm.headword}の日本語案`,
+          }],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: `${termRedirect.targetTerm.headword}の日本語案・言い換え`,
+          description: termRedirect.targetTerm.summary,
+          images: [imageUrl],
         },
       };
     }
   }
+  const imageUrl = term ? `/share/terms/${encodeURIComponent(term.slug)}` : undefined;
   return {
     title: term?.status === "published" ? `${term.headword}の日本語案・言い換え` : "項目",
     description: term?.status === "published" ? term.summary : undefined,
@@ -58,6 +73,18 @@ export async function generateMetadata({ params }: TermPageProps) {
       title: `${term.headword}の日本語案・言い換え`,
       description: term.summary,
       url: `/terms/${term.slug}`,
+      images: [{
+        url: imageUrl!,
+        width: 1200,
+        height: 630,
+        alt: `${term.headword}の日本語案`,
+      }],
+    } : undefined,
+    twitter: term?.status === "published" ? {
+      card: "summary_large_image",
+      title: `${term.headword}の日本語案・言い換え`,
+      description: term.summary,
+      images: [imageUrl!],
     } : undefined,
     robots: term?.status === "published" ? undefined : {
       index: false,
@@ -159,6 +186,10 @@ export default async function TermPage({ params, searchParams }: TermPageProps) 
             <History size={15} />
             変更履歴
           </Link>
+          <ShareButton
+            title={`${term.headword}の日本語案・言い換え | 令和新漢語`}
+            text={`「${term.headword}」を、日本語でどう表しますか？意味と使用例から造語案を比べられます。`}
+          />
           {participatingUser ? (
             <details className="report-details term-report">
               <summary>

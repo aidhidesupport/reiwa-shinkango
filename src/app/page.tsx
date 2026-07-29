@@ -2,13 +2,16 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  BookOpenText,
+  GitBranch,
   MessageSquareText,
   Quote,
-  Search,
+  Sparkles,
   ShieldCheck,
   Users,
 } from "lucide-react";
 import { SearchBox } from "@/components/SearchBox";
+import { featureArticles } from "@/lib/articles";
 import { prisma } from "@/lib/prisma";
 import { scoreProposal } from "@/lib/scoring";
 
@@ -21,13 +24,26 @@ export const metadata = {
     type: "website",
     locale: "ja_JP",
     siteName: "令和新漢語",
-    title: "令和新漢語",
-    description: "横文字を文脈に合う日本語へ。日本語案と使用例を公開で推敲する場。",
+    title: "令和新漢語｜現代のための公開造語所",
+    description: "新しい概念を、日本語で考えられる言葉へ。造語案を意味・語族・使用例から公開で育てます。",
     url: "/",
+    images: [{
+      url: "/og.png",
+      width: 1200,
+      height: 630,
+      alt: "令和新漢語―新しい概念を、日本語で考えられる言葉へ。",
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "令和新漢語｜現代のための公開造語所",
+    description: "新しい概念を、日本語で考えられる言葉へ。造語案を意味・語族・使用例から公開で育てます。",
+    images: ["/og.png"],
   },
 };
 
 export default async function HomePage() {
+  const latestArticle = featureArticles[0];
   const [termCount, proposalCount, exampleCount, recentProposals, recommendations] = await Promise.all([
     prisma.term.count({ where: { status: "published" } }),
     prisma.translationProposal.count({
@@ -88,11 +104,21 @@ export default async function HomePage() {
     <div className="page-shell">
       <section className="top-band">
         <div className="top-copy">
-          <p className="eyebrow">公開推敲型の横文字言い換え集</p>
-          <h1>横文字を、文脈に合う日本語へ。</h1>
+          <p className="eyebrow">現代のための公開造語所</p>
+          <h1>新しい概念を、日本語で考えられる言葉へ。</h1>
           <p>
-            一語一訳で決めつけず、意味・分野・使用例ごとに日本語案を出し合って磨く場所です。
+            外来語を追い出すのではなく、意味を担い、関連する語を生み、
+            実際の文章で使える日本語をつくる。造語の理由と試用結果を公開し、
+            みんなで言葉を育てます。
           </p>
+          <div className="top-actions">
+            <Link href="/vision" className="button">
+              活動理念を読む <ArrowRight size={17} />
+            </Link>
+            <Link href="/terms/engagement" className="button secondary">
+              一語を見てみる
+            </Link>
+          </div>
         </div>
         <SearchBox autoFocus />
       </section>
@@ -109,6 +135,27 @@ export default async function HomePage() {
         <div>
           <strong>{exampleCount}</strong>
           <span>使用例</span>
+        </div>
+      </section>
+
+      <section className="featured-cluster">
+        <div className="featured-cluster-copy">
+          <p className="eyebrow"><Sparkles size={14} /> {latestArticle.series}</p>
+          <h2>{latestArticle.title}</h2>
+          <p>{latestArticle.summary}</p>
+        </div>
+        <div className="featured-cluster-actions">
+          <div aria-label={`${latestArticle.title}の要点`}>
+            {latestArticle.previewItems.map((item) => <span key={item}>{item}</span>)}
+          </div>
+          <div className="featured-cluster-links">
+            <Link href={latestArticle.href} className="button">
+              {latestArticle.cta} <ArrowRight size={17} />
+            </Link>
+            <Link href="/features" className="text-link">
+              過去の記事を見る <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -204,19 +251,19 @@ export default async function HomePage() {
 
       <section className="workflow-band">
         <div>
-          <Search size={22} />
-          <h2>探す</h2>
-          <p>横文字や日本語案から項目を見つけます。</p>
+          <BookOpenText size={22} />
+          <h2>意味を調べる</h2>
+          <p>原語の意味と使われ方を分け、概念の輪郭を確かめます。</p>
+        </div>
+        <div>
+          <GitBranch size={22} />
+          <h2>言葉を造る</h2>
+          <p>一語だけでなく、関連語へ自然に広がる日本語案を考えます。</p>
         </div>
         <div>
           <MessageSquareText size={22} />
-          <h2>試す</h2>
-          <p>実際の文で置き換えて自然さを比べます。</p>
-        </div>
-        <div>
-          <ShieldCheck size={22} />
-          <h2>整理する</h2>
-          <p>評価と議論をもとに、推奨する日本語案を残します。</p>
+          <h2>文で試す</h2>
+          <p>文章や会話で使い、分かりやすさと精確さを検証します。</p>
         </div>
       </section>
     </div>

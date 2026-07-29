@@ -85,6 +85,17 @@ main {
   transform: translateY(0);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -263,6 +274,24 @@ main {
 .top-copy h1 {
   max-width: 680px;
   font-size: clamp(38px, 6vw, 76px);
+}
+
+.top-copy > p:not(.eyebrow) {
+  max-width: 680px;
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.top-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .top-copy p,
@@ -721,6 +750,753 @@ main {
   background: var(--surface);
 }
 
+.featured-cluster {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 32px;
+  align-items: center;
+  margin-top: 22px;
+  padding: 30px;
+  border: 1px solid #b9d5d0;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(220, 239, 235, 0.94), rgba(255, 253, 250, 0.96) 68%),
+    var(--surface);
+}
+
+.featured-cluster-copy,
+.featured-cluster-actions,
+.feature-section-heading {
+  display: grid;
+  gap: 10px;
+}
+
+.featured-cluster .eyebrow,
+.feature-page .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.featured-cluster h2 {
+  max-width: 720px;
+  margin: 0;
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.28;
+}
+
+.featured-cluster p,
+.feature-section-heading p,
+.feature-question-grid p,
+.feature-cautions p,
+.feature-references p,
+.feature-invitation p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.featured-cluster-actions {
+  justify-items: start;
+}
+
+.featured-cluster-actions > div:first-child {
+  display: grid;
+  width: 100%;
+  border-top: 1px solid #b9d5d0;
+}
+
+.featured-cluster-actions span {
+  padding: 10px 0;
+  border-bottom: 1px solid #b9d5d0;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.featured-cluster-actions .button,
+.feature-invitation .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.featured-cluster-links,
+.feature-invitation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  align-items: center;
+}
+
+.featured-cluster-links .text-link,
+.feature-invitation-actions .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.feature-page {
+  display: grid;
+  gap: 66px;
+  padding-bottom: 80px;
+}
+
+.feature-hero {
+  padding: 48px 0 6px;
+}
+
+.feature-hero h1 {
+  max-width: 850px;
+  margin: 0;
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(46px, 7.6vw, 76px);
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+
+.feature-hero > p:last-child {
+  max-width: 760px;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: clamp(17px, 2.3vw, 21px);
+  line-height: 1.95;
+}
+
+.feature-finding {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 26px 28px;
+  border: 1px solid #d9c89f;
+  border-left: 5px solid var(--gold);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #f6efdc, var(--surface) 70%);
+}
+
+.feature-finding > svg {
+  margin-top: 3px;
+  color: var(--gold);
+}
+
+.feature-finding h2,
+.feature-section-heading h2,
+.feature-invitation h2 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.3;
+}
+
+.feature-finding div > p:last-child {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.feature-section {
+  display: grid;
+  gap: 26px;
+}
+
+.word-family-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.engagement-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.engagement-context-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.engagement-context-card > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.engagement-context-card strong {
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+.engagement-context-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.engagement-context-card blockquote {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  line-height: 1.7;
+}
+
+.engagement-workplace-trial {
+  margin-top: -48px;
+  background: #244b46;
+}
+
+.word-family-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.word-family-card:first-child {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 0.68fr) minmax(0, 0.7fr) minmax(0, 1.62fr);
+  align-items: center;
+}
+
+.word-family-card:hover {
+  border-color: var(--accent);
+  background: var(--surface-strong);
+}
+
+.word-family-source,
+.word-family-card strong {
+  display: grid;
+  gap: 2px;
+}
+
+.word-family-source {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.word-family-source small {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 550;
+}
+
+.word-family-card strong {
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+.word-family-card strong small {
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+}
+
+.word-family-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.word-family-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.word-family-card:first-child .word-family-link {
+  grid-column: 3;
+}
+
+.feature-trial {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 26px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fffdfa;
+}
+
+.feature-trial > svg {
+  color: #86c7bd;
+}
+
+.feature-trial > div {
+  display: grid;
+  gap: 8px;
+}
+
+.feature-trial span {
+  color: #86c7bd;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.feature-trial p {
+  margin: 0;
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.feature-question-grid,
+.feature-cautions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.feature-question-grid article,
+.feature-cautions > div {
+  padding: 22px;
+  background: var(--surface);
+}
+
+.feature-question-grid article {
+  display: grid;
+  gap: 10px;
+}
+
+.feature-question-grid svg {
+  color: var(--accent);
+}
+
+.feature-question-grid h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.feature-cautions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.feature-cautions strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.feature-cautions > div:last-child strong {
+  color: var(--red);
+}
+
+.feature-references ol {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.feature-references li {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.feature-references a {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.feature-references li p {
+  margin-top: 6px;
+}
+
+.feature-invitation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+  padding: 30px;
+  border: 1px solid #a7cbc5;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #e8f4f1, var(--surface) 70%);
+}
+
+.feature-invitation > div:first-child {
+  display: grid;
+  gap: 10px;
+}
+
+.article-index-page {
+  display: grid;
+  gap: 54px;
+  padding-bottom: 80px;
+}
+
+.article-index-hero {
+  padding: 48px 0 0;
+}
+
+.article-index-hero .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.article-index-hero h1 {
+  max-width: 850px;
+  margin: 0;
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(46px, 7.2vw, 72px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.article-index-hero > p:last-child {
+  max-width: 760px;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: clamp(17px, 2.3vw, 20px);
+  line-height: 1.9;
+}
+
+.article-archive {
+  display: grid;
+  gap: 18px;
+}
+
+.article-archive-heading {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.article-archive-heading h2,
+.article-archive-heading p {
+  margin: 0;
+}
+
+.article-archive-heading h2 {
+  font-size: 24px;
+}
+
+.article-archive-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.article-archive-list {
+  display: grid;
+  gap: 14px;
+}
+
+.article-archive-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.article-archive-card:first-child {
+  border-color: #a7cbc5;
+  background: linear-gradient(135deg, #edf7f4, var(--surface) 72%);
+}
+
+.article-archive-meta,
+.article-archive-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.article-archive-meta span {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.article-archive-meta time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.article-latest-label {
+  justify-self: start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.article-archive-copy h2,
+.article-archive-copy p {
+  margin: 0;
+}
+
+.article-archive-copy h2 {
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.35;
+}
+
+.article-archive-copy h2 a:hover {
+  color: var(--accent);
+}
+
+.article-archive-copy p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.article-topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.article-topic-list span {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.article-archive-link {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  align-self: center;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.vision-page {
+  display: grid;
+  gap: 68px;
+}
+
+.vision-hero {
+  padding: 46px 0 12px;
+}
+
+.vision-hero h1 {
+  max-width: 850px;
+  margin: 0;
+  font-size: clamp(44px, 7vw, 76px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.vision-lead {
+  max-width: 760px;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: clamp(18px, 2.4vw, 23px);
+  line-height: 1.9;
+}
+
+.vision-statement {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 28px;
+  border: 1px solid #a7cbc5;
+  border-left: 5px solid var(--accent);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #e8f4f1, var(--surface) 70%);
+}
+
+.vision-statement > svg {
+  margin-top: 3px;
+  color: var(--accent);
+}
+
+.vision-statement blockquote {
+  margin: 0;
+  font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.vision-section {
+  display: grid;
+  gap: 28px;
+}
+
+.vision-section-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.vision-section-heading h2,
+.vision-invitation h2 {
+  max-width: 780px;
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.3;
+}
+
+.vision-copy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.vision-copy p,
+.vision-balance p,
+.vision-principles p,
+.vision-process p,
+.vision-invitation p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.vision-balance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.vision-balance > div {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+  background: var(--surface);
+}
+
+.vision-balance strong {
+  font-size: 20px;
+}
+
+.vision-principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.vision-principles article {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.vision-principles article > span {
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.vision-principles h3 {
+  margin: 10px 0 8px;
+  font-size: 19px;
+}
+
+.vision-process {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+  list-style: none;
+}
+
+.vision-process li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 20px 22px;
+  background: var(--surface);
+}
+
+.vision-process li > svg {
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.vision-process li > div {
+  display: grid;
+  gap: 4px;
+}
+
+.vision-process strong {
+  font-size: 17px;
+}
+
+.vision-invitation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+  padding: 30px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fffdfa;
+}
+
+.vision-invitation > div {
+  display: grid;
+  gap: 12px;
+}
+
+.vision-invitation .eyebrow {
+  color: #86c7bd;
+}
+
+.vision-invitation p {
+  max-width: 650px;
+  color: #d8d1c7;
+}
+
+.vision-invitation .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .page-title {
   display: grid;
   gap: 10px;
@@ -959,6 +1735,27 @@ main {
   align-items: flex-end;
   color: var(--muted);
   font-size: 14px;
+}
+
+.share-control {
+  position: relative;
+}
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 750;
+}
+
+.share-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .recommendation-summary {
@@ -3686,7 +4483,10 @@ summary:focus-visible {
   .content-grid,
   .queue-grid,
   .term-layout,
-  .term-hero {
+  .term-hero,
+  .featured-cluster,
+  .feature-invitation,
+  .vision-invitation {
     grid-template-columns: 1fr;
   }
 
@@ -3733,6 +4533,98 @@ summary:focus-visible {
 
   .top-copy h1 {
     font-size: 42px;
+  }
+
+  .vision-page {
+    gap: 48px;
+  }
+
+  .vision-hero {
+    padding-top: 22px;
+  }
+
+  .vision-hero h1 {
+    font-size: 43px;
+  }
+
+  .vision-copy,
+  .vision-balance,
+  .vision-principles {
+    grid-template-columns: 1fr;
+  }
+
+  .vision-statement {
+    padding: 22px;
+  }
+
+  .vision-invitation {
+    align-items: start;
+    padding: 24px;
+  }
+
+  .vision-invitation .button {
+    justify-self: start;
+  }
+
+  .feature-page {
+    gap: 48px;
+  }
+
+  .feature-hero {
+    padding-top: 22px;
+  }
+
+  .article-index-page {
+    gap: 40px;
+  }
+
+  .article-index-hero {
+    padding-top: 22px;
+  }
+
+  .article-index-hero h1 {
+    font-size: 43px;
+  }
+
+  .article-archive-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 22px;
+  }
+
+  .article-archive-link {
+    justify-self: start;
+  }
+
+  .feature-hero h1 {
+    font-size: 43px;
+  }
+
+  .feature-finding {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+
+  .word-family-grid,
+  .engagement-context-grid,
+  .word-family-card:first-child,
+  .feature-question-grid,
+  .feature-cautions,
+  .feature-trial {
+    grid-template-columns: 1fr;
+  }
+
+  .word-family-card:first-child .word-family-link {
+    grid-column: 1;
+  }
+
+  .feature-trial > svg {
+    transform: rotate(90deg);
+  }
+
+  .feature-invitation {
+    align-items: start;
+    padding: 24px;
   }
 
   .metric-row,

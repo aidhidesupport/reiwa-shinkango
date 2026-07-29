@@ -97,9 +97,8 @@ SMTP_USER=aidhide.support@gmail.com
 EMAIL_FROM=令和新漢語 <aidhide.support@gmail.com>
 ```
 
-2026-07-27時点で、上記の公開値はVercelのPreviewとProductionへ登録済みです。
-`NEXT_PUBLIC_SITE_URL=https://reiwa-shinkango.vercel.app` はProductionへ登録済みです。
-次の秘密値とPreviewの公開URLは未登録のため、現在の構成ではデプロイを開始しません。
+2026-07-29時点で、上記の公開値と次のProduction用秘密値はVercelへ登録済みです。
+`NEXT_PUBLIC_SITE_URL=https://reiwa-shinkango.vercel.app` もProductionへ登録済みです。
 
 ```text
 DATABASE_URL
@@ -108,8 +107,9 @@ SESSION_SECRET
 ADMIN_EMAIL
 ADMIN_PASSWORD
 SMTP_PASSWORD
-NEXT_PUBLIC_SITE_URL（Preview）
 ```
+
+Preview用の秘密値と公開URLは、Staging環境を運用するときにProductionとは別の値を登録します。
 
 `SESSION_SECRET` は `openssl rand -base64 48` 等で生成し、`ADMIN_PASSWORD` はパスワード生成機能等で20文字以上の固有値にします。StagingとProductionで同じ秘密値を使わないでください。
 `SMTP_PASSWORD` には2段階認証を有効にした送信アカウントのアプリパスワードを使い、

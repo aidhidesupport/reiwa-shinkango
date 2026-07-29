@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { Bell, BookOpen, LayoutDashboard, LogIn, LogOut, Plus, ScrollText, Search, Shield } from "lucide-react";
+import {
+  Bell,
+  BookOpen,
+  Compass,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Newspaper,
+  Plus,
+  ScrollText,
+  Search,
+  Shield,
+} from "lucide-react";
 import { signOut } from "@/app/actions";
 import { roleLabel } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -30,6 +42,14 @@ export async function Header() {
         </form>
 
         <nav className="header-nav" aria-label="主要導線">
+          <Link href="/features" className="icon-link">
+            <Newspaper size={17} />
+            <span>記事</span>
+          </Link>
+          <Link href="/vision" className="icon-link">
+            <Compass size={17} />
+            <span>理念</span>
+          </Link>
           <Link href="/rules" className="icon-link">
             <ScrollText size={17} />
             <span>ルール</span>

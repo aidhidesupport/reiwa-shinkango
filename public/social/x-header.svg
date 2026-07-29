@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img" aria-labelledby="title desc">
+  <title id="title">令和新漢語 Xヘッダー画像</title>
+  <desc id="desc">生成り色の紙面に、活動理念と語が枝分かれする図を配した横長の見出し</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f3eee5"/>
+      <stop offset=".38" stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#f7f4ee"/>
+    </linearGradient>
+    <pattern id="dots" width="17" height="17" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#60b8b0" opacity=".23"/>
+    </pattern>
+    <style>
+      .serif {
+        font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif CJK JP", serif;
+      }
+      .sans {
+        font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+      }
+    </style>
+  </defs>
+  <rect width="1500" height="500" fill="url(#paper)"/>
+  <rect x="1.5" y="1.5" width="1497" height="497" fill="none" stroke="#bbb2a5" stroke-width="3"/>
+
+  <rect x="1220" width="82" height="500" fill="#dcefeb" opacity=".72"/>
+  <rect x="1322" y="44" width="144" height="144" fill="url(#dots)"/>
+  <path d="M0 422H300C333 422 339 446 372 446C405 446 411 422 444 422H1500" fill="none" stroke="#cfb27e" stroke-width="1.2" opacity=".75"/>
+  <path d="M0 433H294C330 433 338 460 372 460C406 460 414 433 450 433H1500" fill="none" stroke="#cfb27e" stroke-width="1.2" opacity=".55"/>
+
+  <g opacity=".8">
+    <line x1="246" y1="50" x2="246" y2="372" stroke="#b7a98f" stroke-width="1" stroke-dasharray="6 7"/>
+    <line x1="165" y1="211" x2="326" y2="211" stroke="#9ecbc5" stroke-width="1.5" stroke-dasharray="6 6"/>
+    <circle cx="246" cy="211" r="10" fill="#0f6b61"/>
+    <path d="M246 211C295 211 298 112 358 112H395" fill="none" stroke="#0f6b61" stroke-width="3"/>
+    <path d="M246 211C304 211 302 166 372 166H421" fill="none" stroke="#0f6b61" stroke-width="2"/>
+    <path d="M246 211C305 211 315 256 374 256H422" fill="none" stroke="#0f6b61" stroke-width="2"/>
+    <path d="M246 211C294 211 303 326 360 326H397" fill="none" stroke="#0f6b61" stroke-width="3"/>
+    <circle cx="395" cy="112" r="5" fill="#0f6b61"/>
+    <circle cx="421" cy="166" r="5" fill="#0f6b61"/>
+    <circle cx="422" cy="256" r="5" fill="#0f6b61"/>
+    <circle cx="397" cy="326" r="5" fill="#0f6b61"/>
+  </g>
+
+  <g>
+    <text x="484" y="86" class="serif" font-size="34" font-weight="700" letter-spacing="10" fill="#0f5f57">令和新漢語</text>
+    <line x1="484" y1="109" x2="573" y2="109" stroke="#0f5f57" stroke-width="3"/>
+    <text x="484" y="210" class="serif" font-size="70" font-weight="650" fill="#211e1a">新しい概念を、</text>
+    <text x="484" y="307" class="serif" font-size="70" font-weight="650" fill="#211e1a">日本語で考えられる言葉へ。</text>
+    <text x="489" y="365" class="sans" font-size="24" font-weight="650" letter-spacing="2" fill="#6e665b">一語ではなく、語族と文で試す。</text>
+  </g>
+
+  <g transform="translate(1088 397)">
+    <path d="M0 0H332L342 10V57L332 67H0L-10 57V10Z" fill="#fffdf8" stroke="#0f5f57" stroke-width="3"/>
+    <path d="M4 8H326L334 16V51L326 59H4L-2 51V16Z" fill="none" stroke="#0f5f57" stroke-width="1"/>
+    <text x="166" y="43" text-anchor="middle" class="serif" font-size="23" font-weight="700" letter-spacing="2" fill="#0f5f57">現代のための公開造語所</text>
+  </g>
+</svg>

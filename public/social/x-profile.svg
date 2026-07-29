@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-labelledby="title desc">
+  <title id="title">令和新漢語 Xプロフィール画像</title>
+  <desc id="desc">深緑の背景に生成り色の令の字を配した正方形の印</desc>
+  <defs>
+    <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#9dc8c1" opacity=".18"/>
+    </pattern>
+    <style>
+      .serif {
+        font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif CJK JP", serif;
+      }
+      .sans {
+        font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+      }
+    </style>
+  </defs>
+  <rect width="400" height="400" fill="#0f5f57"/>
+  <rect width="400" height="400" fill="url(#dots)"/>
+  <rect x="22" y="22" width="356" height="356" rx="36" fill="none" stroke="#f4ede1" stroke-width="3"/>
+  <rect x="34" y="34" width="332" height="332" rx="29" fill="none" stroke="#8fc4bb" stroke-width="1" opacity=".72"/>
+  <path d="M69 91H117M69 91V139M283 309H331M331 261V309" fill="none" stroke="#d8b77d" stroke-width="3"/>
+  <circle cx="331" cy="91" r="6" fill="#d8b77d"/>
+  <circle cx="69" cy="309" r="6" fill="#8fc4bb"/>
+  <text x="200" y="262" text-anchor="middle" class="serif" font-size="214" font-weight="700" fill="#fffaf0">令</text>
+  <line x1="131" y1="303" x2="269" y2="303" stroke="#d8b77d" stroke-width="2"/>
+  <text x="200" y="337" text-anchor="middle" class="sans" font-size="17" font-weight="700" letter-spacing="8" fill="#e6f0ed">新漢語</text>
+</svg>

@@ -20,6 +20,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/rules`,
     },
     {
+      url: `${baseUrl}/vision`,
+    },
+    {
+      url: `${baseUrl}/features`,
+    },
+    {
+      url: `${baseUrl}/features/sanpu`,
+    },
+    {
+      url: `${baseUrl}/features/engagement`,
+    },
+    {
       url: `${baseUrl}/rules/classification`,
     },
     {
