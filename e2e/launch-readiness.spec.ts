@@ -7,6 +7,7 @@ const publicRoutes = [
   "/terms/engagement",
   "/vision",
   "/features",
+  "/features/data",
   "/features/sanpu",
   "/features/engagement",
   "/rules",
@@ -87,10 +88,10 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
     "content",
     "q_llTZ-8pvZlKmV4DBC5ZoIDqjVi-vDwQfF-Ukc1BcU",
   );
-  await expect(page.getByRole("heading", { name: "「エンゲージメントを高める」って、結局どういうこと？" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /四つの漢語を見る/ })).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "「データ」を漢字二字にできるか。" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /絞り込みを読む/ })).toHaveAttribute(
     "href",
-    "/features/engagement",
+    "/features/data",
   );
   await expect(page.getByRole("link", { name: /過去の記事を見る/ })).toHaveAttribute(
     "href",
@@ -100,7 +101,14 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
   await page.goto("/features");
   await expect(page).toHaveTitle(/記事一覧/);
   await expect(page.getByRole("heading", { level: 1, name: "言葉を調べ、 文章の中で試した記録。" })).toBeVisible();
-  await expect(page.locator(".article-archive-card")).toHaveCount(2);
+  await expect(page.locator(".article-archive-card")).toHaveCount(3);
+  await expect(page.getByRole("link", {
+    name: "「データ」を漢字二字にできるか。",
+    exact: true,
+  })).toHaveAttribute(
+    "href",
+    "/features/data",
+  );
   await expect(page.getByRole("link", {
     name: "「エンゲージメントを高める」って、結局どういうこと？",
     exact: true,
@@ -114,6 +122,15 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
   })).toHaveAttribute(
     "href",
     "/features/sanpu",
+  );
+
+  await page.goto("/features/data");
+  await expect(page).toHaveTitle(/「データ」を漢字二字にできるか/);
+  await expect(page.getByRole("heading", { name: /456万通りから「与象」を考える/ })).toBeVisible();
+  await expect(page.getByText("与象（よしょう）", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /別案を提案する/ })).toHaveAttribute(
+    "href",
+    "/terms/new",
   );
 
   await page.goto("/features/sanpu");
@@ -166,6 +183,7 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
   expect(await sitemapResponse.text()).toContain("/terms/engagement");
   expect(await sitemapResponse.text()).toContain("/vision");
   expect(await sitemapResponse.text()).toContain("/features");
+  expect(await sitemapResponse.text()).toContain("/features/data");
   expect(await sitemapResponse.text()).toContain("/features/sanpu");
   expect(await sitemapResponse.text()).toContain("/features/engagement");
   expect(await sitemapResponse.text()).toContain("/legal/privacy");

@@ -13,6 +13,23 @@ export type FeatureArticle = {
 
 export const featureArticles: FeatureArticle[] = [
   {
+    slug: "data",
+    href: "/features/data",
+    publishedAt: "2026-07-29",
+    publishedLabel: "2026年7月29日",
+    series: "今週の新漢語・第二回",
+    title: "「データ」を漢字二字にできるか。",
+    summary: "常用漢字二字の456万通りから、語源、意味の広さ、既存語との衝突、語族展開を順に検査し、暫定案「与象」を炙り出します。",
+    cta: "絞り込みを読む",
+    previewItems: [
+      "4,562,496通り → 全組合せ",
+      "27語 → 語源に忠実",
+      "5語 → 最終候補",
+      "第一候補 → 与象",
+    ],
+    topics: ["新漢語", "データ", "造語"],
+  },
+  {
     slug: "engagement",
     href: "/features/engagement",
     publishedAt: "2026-07-28",
