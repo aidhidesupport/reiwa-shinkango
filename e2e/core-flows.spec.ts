@@ -127,7 +127,8 @@ test("活動理念から造語の原則と参加方法を確認できる", async
   await expect(page.getByRole("heading", {
     name: "言い換え辞書ではなく、公開造語活動です。",
   })).toBeVisible();
-  await expect(page.locator(".vision-principles article")).toHaveCount(6);
+  await expect(page.locator(".vision-principles article")).toHaveCount(7);
+  await expect(page.getByRole("heading", { name: "必ず漢語で造る" })).toBeVisible();
   await expect(page.locator(".vision-process li")).toHaveCount(5);
   await expect(page.getByText("外来語を排除しません")).toBeVisible();
   await expect(page.getByRole("link", { name: "最初の一語を提案" })).toHaveAttribute("href", "/terms/new");
@@ -292,40 +293,40 @@ test("日本語案の新規・追加・編集フォームが同じ項目でつ�
   await page.getByLabel("取り上げる言葉（必須）").fill("フォーム統一語");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("フォームを比較する使われ方");
   await page.getByLabel("この使われ方の説明（必須）").fill("日本語案フォームの項目が統一されているか確認する説明です。");
-  await page.getByLabel("日本語案（必須）").fill("統一された案");
+  await page.getByLabel("日本語案（必須）").fill("統一案");
   await page.getByLabel("よく合う場面（必須）").fill("新規投稿の確認");
   await page.getByLabel("この案を選んだ理由（任意）").fill("フォーム項目を一貫させられるため。");
   await page.getByLabel("避けたい場面（任意）").fill("別の意味で使う場面");
   await page.getByLabel("良い点（任意）").fill("入力方法が分かりやすい");
   await page.getByLabel("弱い点（任意）").fill("補足が必要");
   await page.getByLabel("元の言葉を使った文").fill("フォーム統一語を確認する。");
-  await page.getByLabel("日本語案に言い換えた文").fill("統一された案を確認する。");
+  await page.getByLabel("日本語案に言い換えた文").fill("統一案を確認する。");
   await page.getByLabel("例文が使われる場面（任意）").fill("E2Eテスト");
   await page.getByRole("button", { name: "この日本語案を投稿" }).click();
 
-  const initialCard = page.locator(".proposal-card").filter({ hasText: "統一された案" });
+  const initialCard = page.locator(".proposal-card").filter({ hasText: "統一案" });
   await expect(initialCard).toContainText("新規投稿の確認");
   await expect(initialCard).toContainText("別の意味で使う場面");
   await expect(initialCard).toContainText("入力方法が分かりやすい");
   await expect(initialCard).toContainText("補足が必要");
-  await expect(initialCard).toContainText("統一された案を確認する。");
+  await expect(initialCard).toContainText("統一案を確認する。");
 
   const addDetails = page.locator("details.section-details").filter({
     has: page.getByText("日本語案を追加", { exact: true }),
   });
   await addDetails.locator("summary").click();
-  await addDetails.getByLabel("日本語案（必須）").fill("追加した案");
+  await addDetails.getByLabel("日本語案（必須）").fill("追加案");
   await addDetails.getByLabel("よく合う場面（必須）").fill("追加投稿の確認");
   await addDetails.getByLabel("この案を選んだ理由（任意）").fill("新規投稿と同じ項目を使えるため。");
   await addDetails.getByLabel("避けたい場面（任意）").fill("短い会話");
   await addDetails.getByLabel("良い点（任意）").fill("比較しやすい");
   await addDetails.getByLabel("弱い点（任意）").fill("少し長い");
   await addDetails.getByLabel("元の言葉を使った文").fill("追加前のフォーム統一語です。");
-  await addDetails.getByLabel("日本語案に言い換えた文").fill("追加した案です。");
+  await addDetails.getByLabel("日本語案に言い換えた文").fill("追加案です。");
   await addDetails.getByLabel("例文が使われる場面（任意）").fill("追加フォーム");
   await addDetails.getByRole("button", { name: "この日本語案を投稿" }).click();
 
-  const addedCard = page.locator(".proposal-card").filter({ hasText: "追加した案" });
+  const addedCard = page.locator(".proposal-card").filter({ hasText: "追加案" });
   await expect(addedCard).toContainText("追加投稿の確認");
   await expect(addedCard).toContainText("短い会話");
   await expect(addedCard).toContainText("比較しやすい");
@@ -353,7 +354,7 @@ test("日本語案の新規・追加・編集フォームが同じ項目でつ�
     has: page.getByText("日本語案の修正を提案", { exact: true }),
   });
   await editDetails.locator("summary").click();
-  await expect(editDetails.getByLabel("日本語案（必須）")).toHaveValue("追加した案");
+  await expect(editDetails.getByLabel("日本語案（必須）")).toHaveValue("追加案");
   await expect(editDetails.getByLabel("よく合う場面（必須）")).toHaveValue("追加投稿の確認");
   await expect(editDetails.getByLabel("この案を選んだ理由（任意）")).toHaveValue("新規投稿と同じ項目を使えるため。");
   await expect(editDetails.getByLabel("避けたい場面（任意）")).toHaveValue("短い会話");
@@ -391,7 +392,7 @@ test("検索とログインエラーを画面内で扱える", async ({ page }) 
   await searchForm.getByLabel("並び順").selectOption("newest");
   await searchForm.getByRole("button", { name: "検索" }).click();
   await expect(page).toHaveURL(/domain=hr/);
-  await expect(page.getByRole("heading", { name: "働きがい", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "熱意度", exact: true })).toBeVisible();
 
   await page.goto("/login");
   const loginForm = page.locator("form").filter({ has: page.getByRole("heading", { name: "ログイン", exact: true }) });
@@ -420,7 +421,7 @@ test("利用者の修正提案を編集者が承認し、履歴へ残せる", as
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("最初の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("承認前に表示される最初の説明文です。");
   await page.getByLabel("タグ（複数可）").fill("修正前タグ");
-  await page.getByLabel("日本語案（必須）").fill("E2E日本語案");
+  await page.getByLabel("日本語案（必須）").fill("試験日本語案");
   await page.getByLabel("よく合う場面（必須）").fill("修正提案の検証");
   await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page).toHaveURL(/\/terms\/e2e/);
@@ -882,10 +883,10 @@ test("編集者が重複項目を統合し、内容と旧URLを統合先へ引�
   await page.getByLabel("取り上げる言葉（必須）").fill("統合先E2E");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("残す使われ方");
   await page.getByLabel("この使われ方の説明（必須）").fill("統合後も残る項目側の使われ方を確認します。");
-  await page.getByLabel("日本語案（必須）").fill("統合先の日本語案");
+  await page.getByLabel("日本語案（必須）").fill("統合先案");
   await page.getByLabel("よく合う場面（必須）").fill("統合先として残す場面");
   await page.getByLabel("元の言葉を使った文").fill("統合先E2Eを確認する。");
-  await page.getByLabel("日本語案に言い換えた文").fill("統合先の日本語案を確認する。");
+  await page.getByLabel("日本語案に言い換えた文").fill("統合先案を確認する。");
   await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.getByRole("heading", { name: "統合先E2E", exact: true })).toBeVisible();
   const targetTermId = await page.locator('input[name="termId"]').first().inputValue();
@@ -894,16 +895,16 @@ test("編集者が重複項目を統合し、内容と旧URLを統合先へ引�
   await page.getByLabel("取り上げる言葉（必須）").fill("統合元E2E");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("移す使われ方");
   await page.getByLabel("この使われ方の説明（必須）").fill("統合時に移動する使われ方と関連データを確認します。");
-  await page.getByLabel("日本語案（必須）").fill("統合元の日本語案");
+  await page.getByLabel("日本語案（必須）").fill("統合元案");
   await page.getByLabel("よく合う場面（必須）").fill("統合元から移す場面");
   await page.getByLabel("元の言葉を使った文").fill("統合元E2Eを確認する。");
-  await page.getByLabel("日本語案に言い換えた文").fill("統合元の日本語案を確認する。");
+  await page.getByLabel("日本語案に言い換えた文").fill("統合元案を確認する。");
   await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.getByRole("heading", { name: "統合元E2E", exact: true })).toBeVisible();
   const sourceUrl = page.url();
   const sourceTermId = await page.locator('input[name="termId"]').first().inputValue();
   const sourceProposal = page.locator(".proposal-card").filter({
-    has: page.getByRole("heading", { name: "統合元の日本語案", exact: true }),
+    has: page.getByRole("heading", { name: "統合元案", exact: true }),
   });
   const sourceProposalId = await sourceProposal.locator('input[name="proposalId"]').first().inputValue();
 
@@ -967,10 +968,10 @@ test("編集者が重複項目を統合し、内容と旧URLを統合先へ引�
   await expect(page.getByRole("heading", { name: "残す使われ方" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "移す使われ方" })).toBeVisible();
   await expect(page.locator(".proposal-card").filter({
-    has: page.getByRole("heading", { name: "統合先の日本語案", exact: true }),
+    has: page.getByRole("heading", { name: "統合先案", exact: true }),
   })).toBeVisible();
   const movedProposal = page.locator(".proposal-card").filter({
-    has: page.getByRole("heading", { name: "統合元の日本語案", exact: true }),
+    has: page.getByRole("heading", { name: "統合元案", exact: true }),
   });
   await expect(movedProposal).toBeVisible();
   await expect(movedProposal.locator(".proposal-evaluation-snapshot")).toContainText("評価 1人");
@@ -1020,7 +1021,7 @@ test("改変された項目・意味・日本語案IDの組み合わせを拒否
   await page.getByLabel("取り上げる言葉（必須）").fill("関連検証B");
   await page.getByLabel("使われ方を短く表す名前（必須）").fill("別項目の意味");
   await page.getByLabel("この使われ方の説明（必須）").fill("最初の項目とは関連しない別の説明です。");
-  await page.getByLabel("日本語案（必須）").fill("別の関連検証訳");
+  await page.getByLabel("日本語案（必須）").fill("別種関連検証訳");
   await page.getByLabel("よく合う場面（必須）").fill("別項目の関連性検証");
   await page.getByRole("button", { name: "この日本語案を投稿" }).click();
   await expect(page.getByRole("heading", { name: "関連検証B", exact: true })).toBeVisible();

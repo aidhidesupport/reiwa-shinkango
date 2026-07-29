@@ -104,18 +104,18 @@ const terms: SeedTerm[] = [
         ],
       },
       {
-        title: "組織への愛着や働きがい",
+        title: "職務熱意と組織愛着",
         description: "従業員が組織に前向きに関わる心理的な状態。",
         domainSlug: "hr",
         proposals: [
           {
-            text: "働きがい",
+            text: "熱意度",
             fitContext: "人事施策、従業員調査、組織改善",
-            rationale: "人事文脈では感情面を自然に表せる。",
+            rationale: "仕事に向ける活力、熱意、没頭の強さを、漢字三字で簡潔に示せる。",
             labels: ["natural", "clear", "accurate", "conversation_friendly"],
             example: {
               original: "社員のエンゲージメントを高める。",
-              rewritten: "社員の働きがいを高める。",
+              rewritten: "社員の熱意度を高める。",
             },
             recommendation: {
               level: "recommended",
@@ -124,14 +124,14 @@ const terms: SeedTerm[] = [
             },
           },
           {
-            text: "組織への愛着",
+            text: "愛着度",
             fitContext: "離職防止、組織調査、経営資料",
-            rationale: "会社や組織との心理的な結びつきを明示できる。",
+            rationale: "組織への心理的な結びつきの強さを、漢字三字で簡潔に示せる。",
             register: "formal",
             labels: ["clear", "accurate", "document_friendly"],
             example: {
               original: "エンゲージメントサーベイを実施する。",
-              rewritten: "組織への愛着を測る調査を実施する。",
+              rewritten: "組織への愛着度を測る調査を実施する。",
             },
           },
         ],

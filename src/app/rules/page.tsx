@@ -20,7 +20,7 @@ export default function RulesPage() {
         <article>
           <BookOpenCheck size={22} />
           <h2>良い投稿</h2>
-          <p>日本語案には、よく合う場面、弱い点、元の文と言い換えた文を添えてください。短い案でも、使用例があるほど評価しやすくなります。</p>
+          <p>日本語案は、漢字音を組み合わせた漢語に限ります。よく合う場面、弱い点、元の文と言い換えた文も添えてください。</p>
         </article>
         <article>
           <CheckCircle2 size={22} />

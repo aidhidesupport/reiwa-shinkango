@@ -88,7 +88,7 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
     "q_llTZ-8pvZlKmV4DBC5ZoIDqjVi-vDwQfF-Ukc1BcU",
   );
   await expect(page.getByRole("heading", { name: "「エンゲージメントを高める」って、結局どういうこと？" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /中身を確かめる/ })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: /四つの漢語を見る/ })).toHaveAttribute(
     "href",
     "/features/engagement",
   );
@@ -132,6 +132,9 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
     name: "「エンゲージメントを高める」って、 結局どういうこと？",
   })).toBeVisible();
   await expect(page.locator(".engagement-context-card")).toHaveCount(4);
+  for (const proposal of ["反応度", "関与度", "熱意度", "愛着度"]) {
+    await expect(page.getByText(proposal, { exact: true }).first()).toBeVisible();
+  }
   await expect(page.getByRole("link", { name: /日本語案を見る/ })).toHaveAttribute(
     "href",
     "/terms/engagement",

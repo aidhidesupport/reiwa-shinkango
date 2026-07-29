@@ -11,7 +11,7 @@ import {
 
 export const metadata = {
   title: "「エンゲージメントを高める」って、結局どういうこと？",
-  description: "SNSでは、いいねやコメント。職場では、仕事への意欲や会社への愛着。「エンゲージメント」の中身を、普段の日本語で言い直します。",
+  description: "反応度、関与度、熱意度、愛着度。「エンゲージメント」の中身を、文脈ごとに四つの三字漢語へ分けて考えます。",
   alternates: {
     canonical: "/features/engagement",
   },
@@ -20,47 +20,47 @@ export const metadata = {
     locale: "ja_JP",
     siteName: "令和新漢語",
     title: "「エンゲージメントを高める」って、結局どういうこと？",
-    description: "SNSでは、いいねやコメント。職場では、仕事への意欲や会社への愛着。ひとつの言葉に詰め込まれた違いをほどきます。",
+    description: "反応度、関与度、熱意度、愛着度。ひとつの言葉に詰め込まれた違いを、四つの三字漢語へ分けます。",
     url: "/features/engagement",
     images: [{
-      url: "/features/engagement-og-v2.png",
+      url: "/features/engagement-og-v3.png",
       width: 1200,
       height: 630,
-      alt: "エンゲージメントが、投稿への反応、利用の続き方、仕事への意欲、会社への愛着という意味で使われることを示す図。",
+      alt: "エンゲージメントを、反応度、関与度、熱意度、愛着度という四つの三字漢語へ分けた図。",
     }],
   },
   twitter: {
     card: "summary_large_image",
     title: "「エンゲージメントを高める」って、結局どういうこと？",
-    description: "SNSでは、いいねやコメント。職場では、仕事への意欲や会社への愛着。ひとつの言葉に詰め込まれた違いをほどきます。",
-    images: ["/features/engagement-og-v2.png"],
+    description: "反応度、関与度、熱意度、愛着度。ひとつの言葉に詰め込まれた違いを、四つの三字漢語へ分けます。",
+    images: ["/features/engagement-og-v3.png"],
   },
 };
 
 const contexts = [
   {
     source: "投稿のエンゲージメント",
-    proposal: "投稿への反応",
-    example: "この投稿は、いいねやコメントが多かった。",
-    note: "SNSの数字を見ているなら、何が増えたのかをそのまま書く方が伝わります。",
+    proposal: "反応度",
+    example: "投稿への反応度を分析する。",
+    note: "いいね、コメント、共有など、投稿に現れた反応の強さを示す漢語です。",
   },
   {
     source: "利用者のエンゲージメント",
-    proposal: "どれくらい使われているか",
-    example: "利用者が、どのくらい続けて使っているかを見る。",
-    note: "サイトやアプリでは、利用時間、再訪、登録など、実際に見ている行動を示します。",
+    proposal: "関与度",
+    example: "利用者の関与度を月ごとに測定する。",
+    note: "利用時間、再訪、登録など、サービスとの関わりの深さを示す漢語です。",
   },
   {
     source: "社員のエンゲージメント",
-    proposal: "仕事への意欲",
-    example: "社員が、意欲を持って働ける職場にする。",
-    note: "仕事に前向きに取り組めているかを話すなら、「意欲」や「働きがい」が自然です。",
+    proposal: "熱意度",
+    example: "社員の熱意度を高める環境を整える。",
+    note: "仕事に向ける活力、熱意、没頭の強さを、組織への愛着と分けて捉える三字漢語です。",
   },
   {
     source: "組織へのエンゲージメント",
-    proposal: "会社への愛着",
-    example: "この会社で働き続けたいと思えるかを尋ねる。",
-    note: "会社との結びつきについて聞きたいなら、愛着、信頼、帰属意識などに分けて考えます。",
+    proposal: "愛着度",
+    example: "組織への愛着度を測る調査を実施する。",
+    note: "所属する組織への愛着や心理的な結びつきの強さを、職務への熱意と分けて示す三字漢語です。",
   },
 ];
 
@@ -96,8 +96,8 @@ export default function EngagementFeaturePage() {
         <p>
           「エンゲージメントを高めたい」。仕事の場で、よく耳にする言い方です。
           でも、何をすれば高まったことになるのでしょう。
-          SNSなら、いいねやコメントの話かもしれません。
-          職場なら、社員の意欲や会社への愛着の話かもしれません。
+          令和新漢語では、説明句へほどくだけで終わらせず、
+          文脈ごとに使い続けられる漢語を造ります。
         </p>
       </section>
 
@@ -105,23 +105,24 @@ export default function EngagementFeaturePage() {
         <CircleHelp size={25} aria-hidden="true" />
         <div>
           <p className="eyebrow">今日の問い</p>
-          <h2>ひとことで済ませると、話がぼやける。</h2>
+          <h2>意味を分け、漢語として名づける。</h2>
           <p>
             「エンゲージメント」は便利な言葉です。
             便利だからこそ、何を指しているのかを言わないまま話が進みがちです。
-            数字を増やしたいのか、もっと使ってほしいのか、
-            気持ちよく働ける職場にしたいのか。そこを日本語で言い直してみます。
+            そこで、投稿、利用、職務、組織という四つの対象に分け、
+            それぞれを漢語で表す案を立てます。
           </p>
         </div>
       </section>
 
       <section className="feature-section">
         <div className="feature-section-heading">
-          <p className="eyebrow">場面ごとに言い直す</p>
-          <h2>決まった訳語より、伝わる一文を。</h2>
+          <p className="eyebrow">四つの漢語案</p>
+          <h2>文脈ごとに、三字漢語を立てる。</h2>
           <p>
-            同じカタカナ語でも、場面が変われば中身も変わります。
-            一語にそろえず、その場で本当に言いたいことを書いてみます。
+            提案語は、必ず漢語で造ります。
+            今回はすべて「度」で結び、漢字三字にそろえました。
+            対象は前後の文で補い、語そのものを短く保ちます。
           </p>
         </div>
         <div className="engagement-context-grid">
@@ -139,12 +140,12 @@ export default function EngagementFeaturePage() {
       <section className="feature-trial">
         <div>
           <span>元の文</span>
-          <p>この投稿は、エンゲージメントが高かった。</p>
+          <p>投稿のエンゲージメントを分析する。</p>
         </div>
         <ArrowRight size={24} aria-hidden="true" />
         <div>
-          <span>言い直した文</span>
-          <p>この投稿は、いいねやコメントが多かった。</p>
+          <span>漢語を使った文</span>
+          <p>投稿への反応度を分析する。</p>
         </div>
       </section>
 
@@ -155,30 +156,30 @@ export default function EngagementFeaturePage() {
         </div>
         <ArrowRight size={24} aria-hidden="true" />
         <div>
-          <span>言い直した文</span>
-          <p>社員が、意欲を持って働ける職場にする。</p>
+          <span>漢語を使った文</span>
+          <p>社員の熱意度を高める。</p>
         </div>
       </section>
 
       <section className="feature-section">
         <div className="feature-section-heading">
-          <p className="eyebrow">書き換える前に</p>
-          <h2>まず、何の話をしているのか確かめる。</h2>
+          <p className="eyebrow">造語前の三点</p>
+          <h2>漢字を並べる前に、概念を分ける。</h2>
         </div>
         <div className="feature-question-grid">
           <article>
             <BarChart3 size={22} aria-hidden="true" />
-            <h3>実際に見ているのは何か</h3>
+            <h3>指標対象</h3>
             <p>いいねの数なのか、利用時間なのか。見ているものを、そのまま書けないか考えます。</p>
           </article>
           <article>
             <Users size={22} aria-hidden="true" />
-            <h3>誰の気持ちの話か</h3>
-            <p>利用者の行動なのか、社員の仕事への意欲なのか、会社への愛着なのかを分けます。</p>
+            <h3>関係主体</h3>
+            <p>利用者の関与度なのか、社員の熱意度なのか、組織への愛着度なのかを分けます。</p>
           </article>
           <article>
             <Target size={22} aria-hidden="true" />
-            <h3>どうなれば成功なのか</h3>
+            <h3>改善目標</h3>
             <p>反応が増えればよいのか、長く使ってほしいのか。目指すところをはっきりさせます。</p>
           </article>
         </div>
@@ -187,13 +188,13 @@ export default function EngagementFeaturePage() {
       <section className="feature-cautions">
         <div>
           <MessageCircle size={20} aria-hidden="true" />
-          <strong>具体的に書くと</strong>
-          <p>何を良くしたいのかが見えます。読む人も、次に何をすればよいか考えやすくなります。</p>
+          <strong>漢語で名づける強み</strong>
+          <p>同じ概念を何度も短く呼べ、関連語や指標名へ展開しやすくなります。</p>
         </div>
         <div>
           <HeartHandshake size={20} aria-hidden="true" />
-          <strong>一語で言い切れないこともある</strong>
-          <p>仕事への意欲と会社への愛着は別のものです。必要なら、無理にまとめず二つに分けて書きます。</p>
+          <strong>一語に統合しない</strong>
+          <p>熱意度と愛着度は別の概念です。漢語にしても、異なる意味を無理にまとめません。</p>
         </div>
       </section>
 
@@ -215,8 +216,8 @@ export default function EngagementFeaturePage() {
       <section className="feature-invitation">
         <div>
           <p className="eyebrow">あなたの文で試す</p>
-          <h2>「エンゲージメント」と書きたくなったら、ひと呼吸。</h2>
-          <p>その文で本当に伝えたいことは何でしょう。実際の一文があれば、ぜひ教えてください。</p>
+          <h2>新漢語は、必ず漢語で造る。</h2>
+          <p>意味の精確さと、文章での使いやすさを両立できているか。実際の用例から一緒に検証してください。</p>
         </div>
         <div className="feature-invitation-actions">
           <Link href="/terms/engagement" className="button">

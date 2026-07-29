@@ -27,6 +27,7 @@ import {
   isEmailVerificationTokenUsable,
 } from "@/lib/email-verification";
 import { EVALUATION_LABEL_IDS, RECOMMENDATION_LEVELS } from "@/lib/labels";
+import { isKangoProposalText, KANGO_PROPOSAL_ERROR } from "@/lib/kango";
 import { joinLabels, normalizeForSearch, slugifyHeadword } from "@/lib/normalize";
 import {
   PASSWORD_RESET_TTL_MINUTES,
@@ -364,8 +365,15 @@ const termSchema = z.object({
   senseDescription: z.string().min(8),
 });
 
+const proposalTextSchema = z
+  .string()
+  .trim()
+  .min(1, "日本語案を入力してください。")
+  .max(120)
+  .refine(isKangoProposalText, KANGO_PROPOSAL_ERROR);
+
 const proposalSubmissionSchema = z.object({
-  text: z.string().trim().min(1, "日本語案を入力してください。").max(120),
+  text: proposalTextSchema,
   fitContext: z.string().trim().min(1, "よく合う場面を入力してください。").max(1000),
   unfitContext: z.string().trim().max(1000).optional(),
   rationale: z.string().trim().max(2000).optional(),
@@ -1796,7 +1804,7 @@ const senseEditSchema = z.object({
 });
 
 const proposalEditSchema = z.object({
-  text: z.string().trim().min(1, "日本語案を入力してください。").max(120),
+  text: proposalTextSchema,
   fitContext: z.string().trim().min(1, "よく合う場面を入力してください。").max(1000),
   unfitContext: z.string().trim().max(1000).nullable(),
   rationale: z.string().trim().max(2000).nullable(),

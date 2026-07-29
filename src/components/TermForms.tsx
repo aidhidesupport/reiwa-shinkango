@@ -47,11 +47,13 @@ export function ProposalFields({
           name="proposalText"
           required
           maxLength={120}
+          pattern="[一-鿿々〆ヶ]+"
+          title="漢字だけで表記する漢語を入力してください。"
           aria-describedby={proposalHelpId}
           defaultValue={values.proposalText}
           placeholder="例：説明責任"
         />
-        <p id={proposalHelpId}>長い説明ではなく、実際に言い換えとして使える短い案を入力します。</p>
+        <p id={proposalHelpId}>日本語案は、漢字だけで表記する漢語に限ります。説明句ではなく、実際の文章で使える短い語を入力します。</p>
       </div>
 
       <fieldset className="proposal-support-fields">
