@@ -87,8 +87,8 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
     "content",
     "q_llTZ-8pvZlKmV4DBC5ZoIDqjVi-vDwQfF-Ukc1BcU",
   );
-  await expect(page.getByRole("heading", { name: "「エンゲージメント」は、なぜ一語で訳せないのか。" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /言い分けを読む/ })).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "「エンゲージメントを高める」って、結局どういうこと？" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /中身を確かめる/ })).toHaveAttribute(
     "href",
     "/features/engagement",
   );
@@ -102,7 +102,7 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
   await expect(page.getByRole("heading", { level: 1, name: "言葉を調べ、 文章の中で試した記録。" })).toBeVisible();
   await expect(page.locator(".article-archive-card")).toHaveCount(2);
   await expect(page.getByRole("link", {
-    name: "「エンゲージメント」は、なぜ一語で訳せないのか。",
+    name: "「エンゲージメントを高める」って、結局どういうこと？",
     exact: true,
   })).toHaveAttribute(
     "href",
@@ -126,10 +126,10 @@ test("公開メタデータ、クロール制御、ヘルスチェックが本�
   );
 
   await page.goto("/features/engagement");
-  await expect(page).toHaveTitle(/「エンゲージメント」は、なぜ一語で訳せないのか/);
+  await expect(page).toHaveTitle(/「エンゲージメントを高める」って、結局どういうこと？/);
   await expect(page.getByRole("heading", {
     level: 1,
-    name: "「エンゲージメント」は、 なぜ一語で訳せないのか。",
+    name: "「エンゲージメントを高める」って、 結局どういうこと？",
   })).toBeVisible();
   await expect(page.locator(".engagement-context-card")).toHaveCount(4);
   await expect(page.getByRole("link", { name: /日本語案を見る/ })).toHaveAttribute(
